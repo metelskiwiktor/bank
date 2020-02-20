@@ -1,0 +1,2 @@
+autoryzacja tokena nie może służyć wszystkim akcjom - np. jeśli zaloguję się jako wiktor to nie mogę założyć nowego banku
+usunąłem z niektórych metod tokeny, trzeba je dodać

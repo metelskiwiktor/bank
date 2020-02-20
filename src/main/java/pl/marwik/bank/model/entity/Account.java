@@ -1,0 +1,57 @@
+package pl.marwik.bank.model.entity;
+
+import javax.persistence.*;
+import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Entity
+public class Account {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    @OneToMany
+    private Set<User> users;
+    private String accountNumber;
+    private BigDecimal balance;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public void addUser(User user){
+        if(users == null){
+            users = new LinkedHashSet<>();
+        }
+
+        users.add(user);
+    }
+}
