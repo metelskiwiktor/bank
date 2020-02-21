@@ -6,90 +6,148 @@ import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.model.entity.Account;
+import pl.marwik.bank.model.entity.Bank;
 import pl.marwik.bank.model.entity.Transaction;
-import pl.marwik.bank.model.request.TransactionDTO;
+import pl.marwik.bank.model.entity.User;
 import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
 import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.helper.TransferMoney;
 import pl.marwik.bank.repository.AccountRepository;
+import pl.marwik.bank.repository.TokenRepository;
 import pl.marwik.bank.repository.TransactionRepository;
 import pl.marwik.bank.service.TransactionService;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
     private TransactionRepository transactionRepository;
     private AccountRepository accountRepository;
+    private TokenRepository tokenRepository;
     private XSync<String> xSync;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, TokenRepository tokenRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.tokenRepository = tokenRepository;
         this.xSync = new XSync<>();
     }
 
     @Override
-    public void transfer(TransactionTransferDTO transactionTransferDTO) throws BankException{
+    public void transfer(TransactionTransferDTO transactionTransferDTO) throws BankException {
         xSync.execute(transactionTransferDTO.getSenderAccountNumber(), () -> {
+            Account from = getAccountByAccountNumber(transactionTransferDTO.getSenderAccountNumber());
             Account to = getAccountByAccountNumber(transactionTransferDTO.getRecipientAccountNumber());
-            Account from = transferSelf(transactionTransferDTO, TransferMoney.SENDER);
 
-            transfer(to, TransferMoney.RECIPIENT, transactionTransferDTO.getAmount());
+            throwIfAmountIsSmallerThanMinimum(transactionTransferDTO.getAmount());
+            throwIfAmountIsSmallerThanBalance(from.getBalance(), transactionTransferDTO.getAmount());
+            throwIfBalanceIsDifference(from.getBalance(), transactionTransferDTO.getSenderBalance());
 
-            Transaction transaction = TransactionMapper.map(transactionTransferDTO, from, to, LocalDateTime.now());
+            createTransaction(transactionTransferDTO, from, to, LocalDateTime.now());
 
-            transactionRepository.save(transaction);
-            accountRepository.save(from);
-            accountRepository.save(to);
+            transfer(from, to, transactionTransferDTO.getAmount());
         });
     }
 
     @Override
-    public void deposit(TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException{
+    public void deposit(TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException {
         xSync.execute(transactionTransferSelfDTO.getSenderAccountNumber(),
-                () -> transferSelf(transactionTransferSelfDTO, TransferMoney.RECIPIENT));
+                () -> {
+                    Account account = getAccountByAccountNumber(
+                            transactionTransferSelfDTO.getSenderAccountNumber());
+
+                    throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
+                    throwIfBalanceIsDifference(account.getBalance(),
+                            transactionTransferSelfDTO.getSenderBalance());
+
+                    transferSelf(account, transactionTransferSelfDTO.getAmount(), TransferMoney.RECIPIENT);
+
+                    createTransaction(transactionTransferSelfDTO, account, LocalDateTime.now());
+                });
     }
 
     @Override
-    public void withdraw(TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException{
+    public void withdraw(TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException {
         xSync.execute(transactionTransferSelfDTO.getSenderAccountNumber(),
-                () -> transferSelf(transactionTransferSelfDTO, TransferMoney.SENDER));
+                () -> {
+                    Account account = getAccountByAccountNumber(
+                            transactionTransferSelfDTO.getSenderAccountNumber());
+                    throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
+                    throwIfAmountIsSmallerThanBalance(account.getBalance(), transactionTransferSelfDTO.getAmount());
+                    throwIfBalanceIsDifference(account.getBalance(),
+                            transactionTransferSelfDTO.getSenderBalance());
+
+                    transferSelf(account, transactionTransferSelfDTO.getAmount(), TransferMoney.SENDER);
+
+                    createTransaction(transactionTransferSelfDTO, account, LocalDateTime.now());
+                });
     }
 
-    private Account transferSelf(TransactionDTO transactionDTO, TransferMoney transferMoney) throws BankException{
-        Account account = getAccountByAccountNumber(transactionDTO.getSenderAccountNumber());
+    protected void authorize(String tokenValue, Account owner){
+        User ownerUser = tokenRepository.findTokenByValue(tokenValue).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
 
-        checkBalanceAndAmount(transactionDTO.getAmount(), account);
+        boolean isUserInAccount = owner.getUsers().stream().anyMatch(user -> user.equals(ownerUser));
 
-        transfer(account, transferMoney, transactionDTO.getAmount());
-
-        return account;
+        if(!isUserInAccount){
+            throw new BankException(ExceptionCode.NOT_PERMITTED);
+        }
     }
 
-    private void checkBalanceAndAmount(BigDecimal amount, Account account) throws BankException{
-        accountRepository
-                .findAccountByAccountNumber(account.getAccountNumber())
-                .filter(acc -> acc.getBalance().equals(account.getBalance()))
-                .orElseThrow(() -> new BankException(ExceptionCode.BALANCE_IS_DIFFERENCE));
+    private void createTransaction(TransactionTransferSelfDTO transactionTransferSelfDTO, Account account, LocalDateTime localDateTime){
+        Transaction transaction = TransactionMapper.map(transactionTransferSelfDTO, account, localDateTime);
 
-        Optional.of(amount.compareTo(BigDecimal.ONE))
-                .filter(integer -> integer > 0)
-                .orElseThrow(() -> new BankException(ExceptionCode.AMOUNT_IS_TOO_SMALL));
-
-        Optional.of(amount.compareTo(account.getBalance()))
-                .filter(integer -> integer > 0)
-                .orElseThrow(() -> new BankException(ExceptionCode.BALANCE_IS_TOO_SMALL));
+        transactionSave(transaction);
     }
 
-    private void transfer(Account account, TransferMoney transferMoney, BigDecimal price){
-        BigDecimal balance = transferMoney.transfer(account.getBalance(), price);
-        account.setBalance(balance);
+    private void createTransaction(TransactionTransferDTO transactionTransferDTO, Account from, Account to, LocalDateTime transactionDate){
+        Transaction transaction = TransactionMapper.map(transactionTransferDTO, from, to, transactionDate);
+
+        transactionSave(transaction);
     }
 
-    private Account getAccountByAccountNumber(String accountNumber){
+    private void transactionSave(Transaction transaction){
+        transactionRepository.save(transaction);
+    }
+
+    private void transferSelf(Account account, BigDecimal amount, TransferMoney transferMoney) {
+        setBalance(account, amount, transferMoney);
+
+        accountRepository.save(account);
+    }
+
+    private void transfer(Account from, Account to, BigDecimal amount) {
+        setBalance(from, amount, TransferMoney.SENDER);
+        setBalance(to, amount, TransferMoney.RECIPIENT);
+
+        accountRepository.save(from);
+        accountRepository.save(to);
+    }
+
+    private void setBalance(Account account, BigDecimal amount, TransferMoney transferMoney) {
+        account.setBalance(transferMoney.transfer(account.getBalance(), amount));
+    }
+
+    private void throwIfAmountIsSmallerThanMinimum(BigDecimal amount) {
+        BigDecimal minimum = BigDecimal.ONE;
+        if (amount.compareTo(minimum) < 0) {
+            throw new BankException((ExceptionCode.AMOUNT_IS_TOO_SMALL));
+        }
+    }
+
+    private void throwIfAmountIsSmallerThanBalance(BigDecimal amount, BigDecimal balance){
+        if (amount.compareTo(balance) < 0) {
+            throw new BankException((ExceptionCode.BALANCE_IS_TOO_SMALL));
+        }
+    }
+
+    private void throwIfBalanceIsDifference(BigDecimal balanceGot, BigDecimal balanceNow) {
+        if (balanceGot.compareTo(balanceNow) != 0) {
+            throw   new BankException((ExceptionCode.BALANCE_IS_DIFFERENCE));
+        }
+    }
+
+    private Account getAccountByAccountNumber(String accountNumber) {
         return accountRepository
                 .findAccountByAccountNumber(accountNumber)
                 .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));

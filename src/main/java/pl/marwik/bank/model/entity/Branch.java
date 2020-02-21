@@ -1,5 +1,7 @@
 package pl.marwik.bank.model.entity;
 
+import pl.marwik.bank.model.entity.Account;
+
 import javax.persistence.*;
 import java.util.LinkedHashSet;
 import java.util.List;

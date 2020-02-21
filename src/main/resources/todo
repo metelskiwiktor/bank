@@ -1,2 +1,5 @@
 autoryzacja tokena nie może służyć wszystkim akcjom - np. jeśli zaloguję się jako wiktor to nie mogę założyć nowego banku
 usunąłem z niektórych metod tokeny, trzeba je dodać
+użytkownik nie powinien zobaczyć historii transakcji jakich chce - przy numerze konta trzeba sprawdzic czy token nalezy do konta
+ustawić response DTO w historii transakcji bo widać wrażliwe dane
+użytkownik nie powinien przelać nie swoich pieniędzy w api

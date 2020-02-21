@@ -1,5 +1,15 @@
 package pl.marwik.bank.model;
 
 public enum Client {
-    F2F, ATM, WEB_PAGE
+    F2F("By f2f"), ATM("By ATM"), WEB("By WEB");
+
+    private String description;
+
+    Client(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
 }

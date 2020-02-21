@@ -1,6 +1,7 @@
 package pl.marwik.bank.service.impl;
 
 import com.antkorwin.xsync.XSync;
+import org.apache.tomcat.jni.Local;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import pl.marwik.bank.repository.UserRepository;
 import pl.marwik.bank.service.AccountService;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -43,18 +45,16 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Page<Transaction> getHistory(String accountNumber, Date dateFrom, Date dateTo, BigDecimal amount) throws BankException {
-        Account account = getAccountByAccountNumber(accountNumber);
-        LocalDateTime from = LocalDateTime.ofInstant(dateFrom.toInstant(), ZoneId.systemDefault());
-        LocalDateTime to = LocalDateTime.ofInstant(dateTo.toInstant(), ZoneId.systemDefault());
+    public Page<Transaction> getHistory(String accountNumber, LocalDate dateFrom, LocalDate dateTo, BigDecimal amount) throws BankException {
         Pageable pageable = Pageable.unpaged();
-        return transactionRepository.findAllByAmountLessThanEqualAndFromAndLocalDateTimeBetween(amount, account, from, to, pageable);
+
+        return transactionRepository.findAllByFrom_AccountNumber(accountNumber, pageable);
     }
 
     @Override
     public void addUser(UserDTO userDTO) {
         System.out.println("Początek metody");
-        xSync.execute(userDTO.getIDCard(), () -> {
+        xSync.execute(userDTO.getIdCard(), () -> {
             Account account = getAccountByAccountNumber(userDTO.getAccountNumber());
 
             User user = UserMapper.map(userDTO);

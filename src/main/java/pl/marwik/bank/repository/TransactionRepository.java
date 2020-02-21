@@ -11,5 +11,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-    Page<Transaction> findAllByAmountLessThanEqualAndFromAndLocalDateTimeBetween(BigDecimal amount, Account account, LocalDateTime from, LocalDateTime to, Pageable pageable);
+//    Page<Transaction> findAllByAmountGreaterThanAndFrom_AccountNumberAndLocalDateTimeBetween(BigDecimal amount, String accountNumber, LocalDateTime from, LocalDateTime to, Pageable pageable)
+    Page<Transaction> findAllByFrom_AccountNumber(String accountNumber, Pageable pageable);
 }
