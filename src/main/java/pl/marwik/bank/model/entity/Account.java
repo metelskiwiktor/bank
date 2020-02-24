@@ -1,5 +1,7 @@
 package pl.marwik.bank.model.entity;
 
+import pl.marwik.bank.model.AccountStatus;
+
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.LinkedHashSet;
@@ -14,6 +16,8 @@ public class Account {
     private Set<User> users;
     private String accountNumber;
     private BigDecimal balance;
+    @Enumerated(EnumType.STRING)
+    private AccountStatus accountStatus;
 
     public Long getId() {
         return id;
@@ -53,5 +57,13 @@ public class Account {
         }
 
         users.add(user);
+    }
+
+    public AccountStatus getAccountStatus() {
+        return accountStatus;
+    }
+
+    public void setAccountStatus(AccountStatus accountStatus) {
+        this.accountStatus = accountStatus;
     }
 }

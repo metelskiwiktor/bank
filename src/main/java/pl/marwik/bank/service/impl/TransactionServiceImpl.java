@@ -6,15 +6,14 @@ import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.model.entity.Account;
-import pl.marwik.bank.model.entity.Bank;
 import pl.marwik.bank.model.entity.Transaction;
-import pl.marwik.bank.model.entity.User;
 import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
 import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.helper.TransferMoney;
 import pl.marwik.bank.repository.AccountRepository;
 import pl.marwik.bank.repository.TokenRepository;
 import pl.marwik.bank.repository.TransactionRepository;
+import pl.marwik.bank.service.OAuthService;
 import pl.marwik.bank.service.TransactionService;
 
 import java.math.BigDecimal;
@@ -25,20 +24,24 @@ public class TransactionServiceImpl implements TransactionService {
     private TransactionRepository transactionRepository;
     private AccountRepository accountRepository;
     private TokenRepository tokenRepository;
+    private OAuthService oAuthService;
     private XSync<String> xSync;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, TokenRepository tokenRepository) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, TokenRepository tokenRepository, OAuthService oAuthService) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.tokenRepository = tokenRepository;
+        this.oAuthService = oAuthService;
         this.xSync = new XSync<>();
     }
 
     @Override
-    public void transfer(TransactionTransferDTO transactionTransferDTO) throws BankException {
+    public void transfer(String tokenValue, TransactionTransferDTO transactionTransferDTO) throws BankException {
         xSync.execute(transactionTransferDTO.getSenderAccountNumber(), () -> {
             Account from = getAccountByAccountNumber(transactionTransferDTO.getSenderAccountNumber());
             Account to = getAccountByAccountNumber(transactionTransferDTO.getRecipientAccountNumber());
+
+            oAuthService.authorize(tokenValue, from);
 
             throwIfAmountIsSmallerThanMinimum(transactionTransferDTO.getAmount());
             throwIfAmountIsSmallerThanBalance(from.getBalance(), transactionTransferDTO.getAmount());
@@ -51,11 +54,13 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void deposit(TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException {
+    public void deposit(String tokenValue, TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException {
         xSync.execute(transactionTransferSelfDTO.getSenderAccountNumber(),
                 () -> {
                     Account account = getAccountByAccountNumber(
                             transactionTransferSelfDTO.getSenderAccountNumber());
+
+                    oAuthService.authorize(tokenValue, account);
 
                     throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
                     throwIfBalanceIsDifference(account.getBalance(),
@@ -68,11 +73,14 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void withdraw(TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException {
+    public void withdraw(String tokenValue, TransactionTransferSelfDTO transactionTransferSelfDTO) throws BankException {
         xSync.execute(transactionTransferSelfDTO.getSenderAccountNumber(),
                 () -> {
                     Account account = getAccountByAccountNumber(
                             transactionTransferSelfDTO.getSenderAccountNumber());
+
+                    oAuthService.authorize(tokenValue, account);
+
                     throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
                     throwIfAmountIsSmallerThanBalance(account.getBalance(), transactionTransferSelfDTO.getAmount());
                     throwIfBalanceIsDifference(account.getBalance(),
@@ -82,16 +90,6 @@ public class TransactionServiceImpl implements TransactionService {
 
                     createTransaction(transactionTransferSelfDTO, account, LocalDateTime.now());
                 });
-    }
-
-    protected void authorize(String tokenValue, Account owner){
-        User ownerUser = tokenRepository.findTokenByValue(tokenValue).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
-
-        boolean isUserInAccount = owner.getUsers().stream().anyMatch(user -> user.equals(ownerUser));
-
-        if(!isUserInAccount){
-            throw new BankException(ExceptionCode.NOT_PERMITTED);
-        }
     }
 
     private void createTransaction(TransactionTransferSelfDTO transactionTransferSelfDTO, Account account, LocalDateTime localDateTime){

@@ -16,7 +16,8 @@ public enum ExceptionCode {
     BANK_NOT_EXIST("BA_001", "Bank not exist", 400),
     BANK_ALREADY_EXIST("BA_002", "Bank already exist", 400),
     NOT_PERMITTED("P_001", "You're not permitted to do this action", 400),
-    NOT_AUTHENTICATED("P_002", "You're not authenticated", 401);
+    NOT_AUTHENTICATED("P_002", "You're not authenticated", 401),
+    ACCOUNT_IS_BLOCKED("P_003", "Account is blocked", 400);
 
 
     private String code;

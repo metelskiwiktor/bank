@@ -12,7 +12,7 @@ public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private LocalDateTime localDateTime;
+    private LocalDateTime actionTime;
     @OneToOne
     private Account from;
     @OneToOne
@@ -23,13 +23,16 @@ public class Transaction {
     private Tag tag;
     @Enumerated(EnumType.STRING)
     private Client client;
+    private BigDecimal balanceBefore;
+    private BigDecimal balanceAfter;
+    private String title;
 
     public Transaction() {
     }
 
-    public Transaction(Long id, LocalDateTime localDateTime, Account from, Account to, BigDecimal amount, String description, Tag tag, Client client) {
+    public Transaction(Long id, LocalDateTime actionTime, Account from, Account to, BigDecimal amount, String description, Tag tag, Client client) {
         this.id = id;
-        this.localDateTime = localDateTime;
+        this.actionTime = actionTime;
         this.from = from;
         this.to = to;
         this.amount = amount;
@@ -46,12 +49,12 @@ public class Transaction {
         this.id = id;
     }
 
-    public LocalDateTime getLocalDateTime() {
-        return localDateTime;
+    public LocalDateTime getActionTime() {
+        return actionTime;
     }
 
-    public void setLocalDateTime(LocalDateTime localDateTime) {
-        this.localDateTime = localDateTime;
+    public void setActionTime(LocalDateTime actionTime) {
+        this.actionTime = actionTime;
     }
 
     public Account getFrom() {
@@ -100,5 +103,29 @@ public class Transaction {
 
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    public BigDecimal getBalanceBefore() {
+        return balanceBefore;
+    }
+
+    public void setBalanceBefore(BigDecimal balanceBefore) {
+        this.balanceBefore = balanceBefore;
+    }
+
+    public BigDecimal getBalanceAfter() {
+        return balanceAfter;
+    }
+
+    public void setBalanceAfter(BigDecimal balanceAfter) {
+        this.balanceAfter = balanceAfter;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }

@@ -36,10 +36,4 @@ public class BankServiceImpl implements BankService {
             throw new BankException(ExceptionCode.BANK_ALREADY_EXIST);
         }
     }
-
-    private Bank getBankByBankName(String bankName){
-        return bankRepository
-                .findBankByName(bankName)
-                .orElseThrow(() -> new BankException(ExceptionCode.BANK_NOT_EXIST));
-    }
 }

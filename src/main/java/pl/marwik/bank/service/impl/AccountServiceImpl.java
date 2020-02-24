@@ -1,13 +1,14 @@
 package pl.marwik.bank.service.impl;
 
 import com.antkorwin.xsync.XSync;
-import org.apache.tomcat.jni.Local;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.initializer.AccountInitialize;
+import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.mapper.UserMapper;
 import pl.marwik.bank.model.entity.Account;
 import pl.marwik.bank.model.entity.Branch;
@@ -15,18 +16,18 @@ import pl.marwik.bank.model.entity.Transaction;
 import pl.marwik.bank.model.entity.User;
 import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
+import pl.marwik.bank.model.response.TransactionDTO;
 import pl.marwik.bank.repository.AccountRepository;
 import pl.marwik.bank.repository.BranchRepository;
 import pl.marwik.bank.repository.TransactionRepository;
 import pl.marwik.bank.repository.UserRepository;
 import pl.marwik.bank.service.AccountService;
+import pl.marwik.bank.service.OAuthService;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AccountServiceImpl implements AccountService {
@@ -34,29 +35,34 @@ public class AccountServiceImpl implements AccountService {
     private BranchRepository branchRepository;
     private TransactionRepository transactionRepository;
     private UserRepository userRepository;
+    private OAuthService oAuthService;
     private XSync<String> xSync;
 
-    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository) {
+    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService) {
         this.accountRepository = accountRepository;
         this.branchRepository = branchRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
+        this.oAuthService = oAuthService;
         this.xSync = new XSync<>();
     }
 
     @Override
-    public Page<Transaction> getHistory(String accountNumber, LocalDate dateFrom, LocalDate dateTo, BigDecimal amount) throws BankException {
+    public Page<TransactionDTO> getHistory(String tokenValue, String accountNumber, BigDecimal amount) throws BankException {
+        oAuthService.authorize(tokenValue, getAccountByAccountNumber(accountNumber));
+
         Pageable pageable = Pageable.unpaged();
 
-        return transactionRepository.findAllByFrom_AccountNumber(accountNumber, pageable);
+        Page<Transaction> transactions = transactionRepository.findAllByFrom_AccountNumber(accountNumber, pageable);
+        List<TransactionDTO> collect = transactions.getContent().stream().map(TransactionMapper::map).collect(Collectors.toList());
+        return new PageImpl<>(collect.subList(0, Integer.MAX_VALUE), pageable, transactions.getSize());
     }
 
     @Override
-    public void addUser(UserDTO userDTO) {
-        System.out.println("Początek metody");
+    public void addUser(String tokenValue, UserDTO userDTO) {
         xSync.execute(userDTO.getIdCard(), () -> {
             Account account = getAccountByAccountNumber(userDTO.getAccountNumber());
-
+            oAuthService.authorize(tokenValue, account);
             User user = UserMapper.map(userDTO);
 
             addUser(user, account);
@@ -65,10 +71,9 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void createAccount(CreateAccountDTO createAccountDTO) {
-        System.out.println(createAccountDTO);
         Branch branch = getBranchByBranchName(createAccountDTO.getBranchName());
 
-        Account account = AccountInitialize.generate();
+        Account account = AccountInitialize.initializeAccountInCreateStatus();
         User user = UserMapper.map(createAccountDTO.getUserDTO());
         throwIfUserExist(user.getIDCard());
 

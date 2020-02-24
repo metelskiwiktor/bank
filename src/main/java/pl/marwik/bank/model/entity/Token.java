@@ -1,6 +1,7 @@
 package pl.marwik.bank.model.entity;
 
 import pl.marwik.bank.model.Client;
+import pl.marwik.bank.model.Role;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -16,6 +17,8 @@ public class Token {
     private Client client;
     private LocalDateTime expiryDate;
     private String value;
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     public Long getId() {
         return id;
@@ -55,5 +58,13 @@ public class Token {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 }
