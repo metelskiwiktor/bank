@@ -11,7 +11,9 @@ import pl.marwik.bank.service.AccountService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/account")
 public class AccountController {
@@ -34,10 +36,8 @@ public class AccountController {
 
     @RequireUserAuthenticate
     @GetMapping("/transactions-history")
-    public Page<TransactionDTO> getHistory(
-            @RequestHeader("tokenValue") String tokenValue,
-            @RequestHeader("accountNumber") String accountNumber,
-            @RequestParam("amount") BigDecimal amount) {
-        return accountService.getHistory(tokenValue, accountNumber, amount);
+    public List<TransactionDTO> getHistory(
+            @RequestHeader("tokenValue") String tokenValue){
+        return accountService.getHistory(tokenValue);
     }
 }

@@ -7,6 +7,7 @@ import pl.marwik.bank.model.request.CreateBranchDTO;
 import pl.marwik.bank.service.BankService;
 import pl.marwik.bank.service.BranchService;
 
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/bank-administration")
 public class BankAdministrationController {

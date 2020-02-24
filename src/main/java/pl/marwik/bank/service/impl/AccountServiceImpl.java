@@ -10,21 +10,14 @@ import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.initializer.AccountInitialize;
 import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.mapper.UserMapper;
-import pl.marwik.bank.model.entity.Account;
-import pl.marwik.bank.model.entity.Branch;
-import pl.marwik.bank.model.entity.Transaction;
-import pl.marwik.bank.model.entity.User;
+import pl.marwik.bank.model.entity.*;
 import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
 import pl.marwik.bank.model.response.TransactionDTO;
-import pl.marwik.bank.repository.AccountRepository;
-import pl.marwik.bank.repository.BranchRepository;
-import pl.marwik.bank.repository.TransactionRepository;
-import pl.marwik.bank.repository.UserRepository;
+import pl.marwik.bank.repository.*;
 import pl.marwik.bank.service.AccountService;
 import pl.marwik.bank.service.OAuthService;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,26 +29,30 @@ public class AccountServiceImpl implements AccountService {
     private TransactionRepository transactionRepository;
     private UserRepository userRepository;
     private OAuthService oAuthService;
+    private TokenRepository tokenRepository;
     private XSync<String> xSync;
 
-    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService) {
+    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService, TokenRepository tokenRepository) {
         this.accountRepository = accountRepository;
         this.branchRepository = branchRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.oAuthService = oAuthService;
+        this.tokenRepository = tokenRepository;
         this.xSync = new XSync<>();
     }
 
     @Override
-    public Page<TransactionDTO> getHistory(String tokenValue, String accountNumber, BigDecimal amount) throws BankException {
-        oAuthService.authorize(tokenValue, getAccountByAccountNumber(accountNumber));
+    public List<TransactionDTO> getHistory(String tokenValue) throws BankException {
+        Optional<Token> tokenByValue = tokenRepository.findTokenByValue(tokenValue);
+        User user = tokenByValue.orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
+        Account account = accountRepository.findAll().stream().filter(acc -> acc.getUsers().contains(user)).findFirst().orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
 
         Pageable pageable = Pageable.unpaged();
 
-        Page<Transaction> transactions = transactionRepository.findAllByFrom_AccountNumber(accountNumber, pageable);
-        List<TransactionDTO> collect = transactions.getContent().stream().map(TransactionMapper::map).collect(Collectors.toList());
-        return new PageImpl<>(collect.subList(0, Integer.MAX_VALUE), pageable, transactions.getSize());
+        Page<Transaction> transactions = transactionRepository.findAllByFrom_AccountNumber(account.getAccountNumber(), pageable);
+        return transactions.getContent().stream().map(TransactionMapper::map).collect(Collectors.toList());
+//        return new PageImpl<>(collect.subList(0, 1), pageable, transactions.getSize());
     }
 
     @Override

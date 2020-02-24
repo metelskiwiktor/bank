@@ -5,6 +5,7 @@ import pl.marwik.bank.model.oauth.RequireUserAuthenticate;
 import pl.marwik.bank.model.request.LoginDTO;
 import pl.marwik.bank.service.OAuthService;
 
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/oauth")
 public class OAuthController {

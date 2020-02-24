@@ -6,6 +6,7 @@ import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
 import pl.marwik.bank.service.TransactionService;
 
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/transaction/")
 public class TransactionController {
