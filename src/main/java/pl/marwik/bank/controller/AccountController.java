@@ -6,6 +6,7 @@ import pl.marwik.bank.model.entity.Transaction;
 import pl.marwik.bank.model.oauth.RequireUserAuthenticate;
 import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
+import pl.marwik.bank.model.response.DetailsDTO;
 import pl.marwik.bank.model.response.TransactionDTO;
 import pl.marwik.bank.service.AccountService;
 
@@ -39,5 +40,11 @@ public class AccountController {
     public List<TransactionDTO> getHistory(
             @RequestHeader("tokenValue") String tokenValue){
         return accountService.getHistory(tokenValue);
+    }
+
+    @RequireUserAuthenticate
+    @GetMapping("/details")
+    public DetailsDTO getDetails(@RequestHeader("tokenValue") String tokenValue){
+        return accountService.getDetails(tokenValue);
     }
 }

@@ -8,11 +8,13 @@ import org.springframework.stereotype.Service;
 import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.initializer.AccountInitialize;
+import pl.marwik.bank.mapper.DetailsMapper;
 import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.mapper.UserMapper;
 import pl.marwik.bank.model.entity.*;
 import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
+import pl.marwik.bank.model.response.DetailsDTO;
 import pl.marwik.bank.model.response.TransactionDTO;
 import pl.marwik.bank.repository.*;
 import pl.marwik.bank.service.AccountService;
@@ -82,6 +84,12 @@ public class AccountServiceImpl implements AccountService {
         branchRepository.save(branch);
     }
 
+    @Override
+    public DetailsDTO getDetails(String tokenValue) {
+        Account account = getAccountByTokenValue(tokenValue);
+        return DetailsMapper.map(account);
+    }
+
     private void addUser(User user, Account account) {
         throwIfUserExist(user.getIDCard());
 
@@ -94,7 +102,7 @@ public class AccountServiceImpl implements AccountService {
     private void throwIfUserExist(String IDCard) {
         Optional<User> user = userRepository.getUserByIDCard(IDCard);
 
-        if(user.isPresent()){
+        if (user.isPresent()) {
             throw new BankException(ExceptionCode.USER_ALREADY_EXIST);
         }
     }
@@ -109,5 +117,10 @@ public class AccountServiceImpl implements AccountService {
         return accountRepository
                 .findAccountByAccountNumber(accountNumber)
                 .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
+    }
+
+    private Account getAccountByTokenValue(String tokenValue) {
+        User user = tokenRepository.findTokenByValue(tokenValue).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
+        return accountRepository.findAll().stream().filter(account -> account.getUsers().contains(user)).findFirst().orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
     }
 }

@@ -1,5 +1,6 @@
 package pl.marwik.bank.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.marwik.bank.model.oauth.RequireUserAuthenticate;
 import pl.marwik.bank.model.request.LoginDTO;
