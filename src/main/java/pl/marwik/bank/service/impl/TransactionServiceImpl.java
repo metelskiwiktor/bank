@@ -38,6 +38,7 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     public void transfer(String tokenValue, TransactionTransferDTO transactionTransferDTO) throws BankException {
         xSync.execute(transactionTransferDTO.getSenderAccountNumber(), () -> {
+            System.out.println(transactionTransferDTO);
             Account from = getAccountByAccountNumber(transactionTransferDTO.getSenderAccountNumber());
             Account to = getAccountByAccountNumber(transactionTransferDTO.getRecipientAccountNumber());
 
@@ -66,9 +67,9 @@ public class TransactionServiceImpl implements TransactionService {
                     throwIfBalanceIsDifference(account.getBalance(),
                             transactionTransferSelfDTO.getSenderBalance());
 
-                    transferSelf(account, transactionTransferSelfDTO.getAmount(), TransferMoney.RECIPIENT);
-
                     createTransaction(transactionTransferSelfDTO, account, LocalDateTime.now());
+
+                    transferSelf(account, transactionTransferSelfDTO.getAmount(), TransferMoney.RECIPIENT);
                 });
     }
 
@@ -86,9 +87,9 @@ public class TransactionServiceImpl implements TransactionService {
                     throwIfBalanceIsDifference(account.getBalance(),
                             transactionTransferSelfDTO.getSenderBalance());
 
-                    transferSelf(account, transactionTransferSelfDTO.getAmount(), TransferMoney.SENDER);
-
                     createTransaction(transactionTransferSelfDTO, account, LocalDateTime.now());
+                    
+                    transferSelf(account, transactionTransferSelfDTO.getAmount(), TransferMoney.SENDER);
                 });
     }
 

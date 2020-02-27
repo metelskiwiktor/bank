@@ -2,6 +2,9 @@ package pl.marwik.bank.mapper;
 
 import pl.marwik.bank.model.entity.Account;
 import pl.marwik.bank.model.entity.Transaction;
+import pl.marwik.bank.model.entity.User;
+import pl.marwik.bank.model.helper.Name;
+import pl.marwik.bank.model.helper.TransferMoney;
 import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
 import pl.marwik.bank.model.response.TransactionDTO;
@@ -14,7 +17,7 @@ public abstract class TransactionMapper {
         Transaction transaction = new Transaction();
         transaction.setAmount(transactionTransferDTO.getAmount());
         transaction.setClient(transactionTransferDTO.getClient());
-        transaction.setDescription(transactionTransferDTO.getDescription());
+        transaction.setTitle(transactionTransferDTO.getTitle());
         transaction.setClient(transactionTransferDTO.getClient());
         return transaction;
     }
@@ -24,8 +27,10 @@ public abstract class TransactionMapper {
         transaction.setFrom(from);
         transaction.setTo(to);
         transaction.setActionTime(transactionDate);
-        transaction.setBalanceBefore(from.getBalance());
-        transaction.setBalanceAfter(from.getBalance().subtract(transactionTransferDTO.getAmount()));
+        transaction.setFromBalance(from.getBalance());
+        transaction.setToBalance(to.getBalance());
+        transaction.setOperationType(transactionTransferDTO.getOperationType());
+
         return transaction;
     }
 
@@ -35,19 +40,30 @@ public abstract class TransactionMapper {
         transaction.setClient(transactionTransferSelfDTO.getClient());
         transaction.setTo(account);
         transaction.setFrom(account);
-        transaction.setDescription(transactionTransferSelfDTO.getClient().getDescription());
+        transaction.setFromBalance(account.getBalance());
+        transaction.setToBalance(account.getBalance());
+        transaction.setTitle(transactionTransferSelfDTO.getClient().getDescription());
         transaction.setAmount(transactionTransferSelfDTO.getAmount());
+        transaction.setOperationType(transactionTransferSelfDTO.getOperationType());
 
         return transaction;
     }
 
-    public static TransactionDTO map(Transaction transaction){
+    public static TransactionDTO map(Transaction transaction, String fromTo, boolean sender){
         TransactionDTO transactionDTO = new TransactionDTO();
         transactionDTO.setActionTime(transaction.getActionTime());
         transactionDTO.setAmount(transaction.getAmount());
-        transactionDTO.setBalanceBefore(transaction.getBalanceBefore());
-        transactionDTO.setBalanceAfter(transaction.getBalanceAfter());
 
+        BigDecimal balance;
+        if(sender){
+            balance = TransferMoney.SENDER.transfer(transaction.getFromBalance(), transaction.getAmount());
+        } else {
+            balance = TransferMoney.RECIPIENT.transfer(transaction.getToBalance(), transaction.getAmount());
+        }
+        transactionDTO.setBalanceAfter(balance);
+        transactionDTO.setTitle(transaction.getTitle());
+        transactionDTO.setOperationType(transaction.getOperationType());
+        transactionDTO.setFromTo(fromTo);
         return transactionDTO;
     }
 }

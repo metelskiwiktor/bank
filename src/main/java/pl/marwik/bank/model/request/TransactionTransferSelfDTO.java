@@ -1,6 +1,7 @@
 package pl.marwik.bank.model.request;
 
 import pl.marwik.bank.model.Client;
+import pl.marwik.bank.model.OperationType;
 import pl.marwik.bank.model.helper.TransferMoney;
 
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ public class TransactionTransferSelfDTO implements TransactionDTO{
     private String senderAccountNumber;
     private BigDecimal senderBalance;
     private Client client;
+    private OperationType operationType;
 
     public Long getId() {
         return id;
@@ -51,5 +53,10 @@ public class TransactionTransferSelfDTO implements TransactionDTO{
 
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    @Override
+    public OperationType getOperationType() {
+        return operationType;
     }
 }

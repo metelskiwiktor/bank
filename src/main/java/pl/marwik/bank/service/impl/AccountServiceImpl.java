@@ -11,7 +11,9 @@ import pl.marwik.bank.initializer.AccountInitialize;
 import pl.marwik.bank.mapper.DetailsMapper;
 import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.mapper.UserMapper;
+import pl.marwik.bank.model.OperationType;
 import pl.marwik.bank.model.entity.*;
+import pl.marwik.bank.model.helper.Name;
 import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
 import pl.marwik.bank.model.response.DetailsDTO;
@@ -48,13 +50,30 @@ public class AccountServiceImpl implements AccountService {
     public List<TransactionDTO> getHistory(String tokenValue) throws BankException {
         Optional<Token> tokenByValue = tokenRepository.findTokenByValue(tokenValue);
         User user = tokenByValue.orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
-        Account account = accountRepository.findAll().stream().filter(acc -> acc.getUsers().contains(user)).findFirst().orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
+        Account account = accountRepository
+                .findAll()
+                .stream()
+                .filter(acc -> acc.getUsers().contains(user))
+                .findFirst()
+                .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
+        String iSeeMee = Name.getName(account, getBranchByAccount(account));
 
-        Pageable pageable = Pageable.unpaged();
+        List<Transaction> transactions = transactionRepository.findAllByFrom_AccountNumberOrTo_AccountNumber(account.getAccountNumber(), account.getAccountNumber());
+        return transactions.stream()
+                .map(transaction -> {
+                    if(transaction.getFrom().equals(account) && !transaction.getTo().equals(account) && transaction.getOperationType().equals(OperationType.TRANSFER)){
+                        return TransactionMapper.map(transaction,  Name.getName(transaction.getTo(), getBranchByAccount(transaction.getTo())), true);
+                    }
+                    else if (transaction.getTo().equals(account) && transaction.getFrom().equals(account) && !transaction.getOperationType().equals(OperationType.DEPOSIT)) {
+                        return TransactionMapper.map(transaction, iSeeMee, true);
+                    }
+                    else if(!transaction.getFrom().equals(account) && transaction.getTo().equals(account) && transaction.getOperationType().equals(OperationType.TRANSFER)){
+                        return TransactionMapper.map(transaction,  Name.getName(transaction.getFrom(), getBranchByAccount(transaction.getFrom())), false);
+                    }
 
-        Page<Transaction> transactions = transactionRepository.findAllByFrom_AccountNumber(account.getAccountNumber(), pageable);
-        return transactions.getContent().stream().map(TransactionMapper::map).collect(Collectors.toList());
-//        return new PageImpl<>(collect.subList(0, 1), pageable, transactions.getSize());
+                    return TransactionMapper.map(transaction, iSeeMee, false);
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -111,6 +130,10 @@ public class AccountServiceImpl implements AccountService {
         return branchRepository
                 .findBranchByBranchName(branchName)
                 .orElseThrow(() -> new BankException(ExceptionCode.BRANCH_NOT_FOUND));
+    }
+
+    private Branch getBranchByAccount(Account account){
+        return branchRepository.findBranchByAccountsContains(account).orElseThrow(() -> new BankException(ExceptionCode.BRANCH_NOT_FOUND));
     }
 
     private Account getAccountByAccountNumber(String accountNumber) throws BankException {

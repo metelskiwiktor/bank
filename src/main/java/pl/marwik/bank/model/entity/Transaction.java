@@ -1,7 +1,7 @@
 package pl.marwik.bank.model.entity;
 
 import pl.marwik.bank.model.Client;
-import pl.marwik.bank.model.Tag;
+import pl.marwik.bank.model.OperationType;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -18,27 +18,15 @@ public class Transaction {
     @OneToOne
     private Account to;
     private BigDecimal amount;
-    private String description;
-    @Enumerated(EnumType.STRING)
-    private Tag tag;
     @Enumerated(EnumType.STRING)
     private Client client;
-    private BigDecimal balanceBefore;
-    private BigDecimal balanceAfter;
+    private BigDecimal fromBalance;
+    private BigDecimal toBalance;
     private String title;
+    @Enumerated(EnumType.STRING)
+    private OperationType operationType;
 
     public Transaction() {
-    }
-
-    public Transaction(Long id, LocalDateTime actionTime, Account from, Account to, BigDecimal amount, String description, Tag tag, Client client) {
-        this.id = id;
-        this.actionTime = actionTime;
-        this.from = from;
-        this.to = to;
-        this.amount = amount;
-        this.description = description;
-        this.tag = tag;
-        this.client = client;
     }
 
     public Long getId() {
@@ -81,22 +69,6 @@ public class Transaction {
         this.amount = amount;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public Tag getTag() {
-        return tag;
-    }
-
-    public void setTag(Tag tag) {
-        this.tag = tag;
-    }
-
     public Client getClient() {
         return client;
     }
@@ -105,20 +77,20 @@ public class Transaction {
         this.client = client;
     }
 
-    public BigDecimal getBalanceBefore() {
-        return balanceBefore;
+    public BigDecimal getFromBalance() {
+        return fromBalance;
     }
 
-    public void setBalanceBefore(BigDecimal balanceBefore) {
-        this.balanceBefore = balanceBefore;
+    public void setFromBalance(BigDecimal fromBalance) {
+        this.fromBalance = fromBalance;
     }
 
-    public BigDecimal getBalanceAfter() {
-        return balanceAfter;
+    public BigDecimal getToBalance() {
+        return toBalance;
     }
 
-    public void setBalanceAfter(BigDecimal balanceAfter) {
-        this.balanceAfter = balanceAfter;
+    public void setToBalance(BigDecimal toBalance) {
+        this.toBalance = toBalance;
     }
 
     public String getTitle() {
@@ -127,5 +99,13 @@ public class Transaction {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public OperationType getOperationType() {
+        return operationType;
+    }
+
+    public void setOperationType(OperationType operationType) {
+        this.operationType = operationType;
     }
 }

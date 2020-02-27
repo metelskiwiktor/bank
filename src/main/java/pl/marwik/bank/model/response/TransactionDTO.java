@@ -7,11 +7,10 @@ import java.time.LocalDateTime;
 
 public class TransactionDTO {
     private LocalDateTime actionTime;
-    private BigDecimal balanceBefore;
     private BigDecimal amount;
     private BigDecimal balanceAfter;
     private OperationType operationType;
-    private String recipient;
+    private String fromTo;
     private String title;
 
     public LocalDateTime getActionTime() {
@@ -20,14 +19,6 @@ public class TransactionDTO {
 
     public void setActionTime(LocalDateTime actionTime) {
         this.actionTime = actionTime;
-    }
-
-    public BigDecimal getBalanceBefore() {
-        return balanceBefore;
-    }
-
-    public void setBalanceBefore(BigDecimal balanceBefore) {
-        this.balanceBefore = balanceBefore;
     }
 
     public BigDecimal getAmount() {
@@ -54,12 +45,12 @@ public class TransactionDTO {
         this.operationType = operationType;
     }
 
-    public String getRecipient() {
-        return recipient;
+    public String getFromTo() {
+        return fromTo;
     }
 
-    public void setRecipient(String recipient) {
-        this.recipient = recipient;
+    public void setFromTo(String fromTo) {
+        this.fromTo = fromTo;
     }
 
     public String getTitle() {

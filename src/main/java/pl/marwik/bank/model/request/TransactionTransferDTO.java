@@ -1,6 +1,7 @@
 package pl.marwik.bank.model.request;
 
 import pl.marwik.bank.model.Client;
+import pl.marwik.bank.model.OperationType;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -12,10 +13,11 @@ public class TransactionTransferDTO implements TransactionDTO{
     private String recipientAccountNumber;
     @DecimalMin(value = "0.01")
     private BigDecimal amount;
-    private String description;
+    private String title;
     @Enumerated(EnumType.STRING)
     private Client client;
     private BigDecimal senderBalance;
+    private OperationType operationType;
 
     public String getSenderAccountNumber() {
         return senderAccountNumber;
@@ -41,12 +43,12 @@ public class TransactionTransferDTO implements TransactionDTO{
         this.amount = amount;
     }
 
-    public String getDescription() {
-        return description;
+    public String getTitle() {
+        return title;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public Client getClient() {
@@ -61,7 +63,24 @@ public class TransactionTransferDTO implements TransactionDTO{
         return senderBalance;
     }
 
+    @Override
+    public OperationType getOperationType() {
+        return operationType;
+    }
+
     public void setSenderBalance(BigDecimal senderBalance) {
         this.senderBalance = senderBalance;
+    }
+
+    @Override
+    public String toString() {
+        return "TransactionTransferDTO{" +
+                "senderAccountNumber='" + senderAccountNumber + '\'' +
+                ", recipientAccountNumber='" + recipientAccountNumber + '\'' +
+                ", amount=" + amount +
+                ", description='" + title + '\'' +
+                ", client=" + client +
+                ", senderBalance=" + senderBalance +
+                '}';
     }
 }
