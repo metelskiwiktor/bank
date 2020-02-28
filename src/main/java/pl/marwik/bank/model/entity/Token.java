@@ -19,6 +19,7 @@ public class Token {
     private String value;
     @Enumerated(EnumType.STRING)
     private Role role;
+    private String ipAddress;
 
     public Long getId() {
         return id;
@@ -66,5 +67,13 @@ public class Token {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
     }
 }

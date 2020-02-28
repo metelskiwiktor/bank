@@ -55,6 +55,10 @@ public class TransactionTransferSelfDTO implements TransactionDTO{
         this.client = client;
     }
 
+    public void setOperationType(OperationType operationType) {
+        this.operationType = operationType;
+    }
+
     @Override
     public OperationType getOperationType() {
         return operationType;

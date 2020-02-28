@@ -94,7 +94,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = AccountInitialize.initializeAccountInCreateStatus();
         User user = UserMapper.map(createAccountDTO.getUserDTO());
         throwIfUserExist(user.getIDCard());
-
+        user.setAccountOwner(true);
         accountRepository.save(account);
         addUser(user, account);
 

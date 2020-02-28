@@ -6,18 +6,20 @@ import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.initializer.TokenInitialize;
 import pl.marwik.bank.model.AccountStatus;
+import pl.marwik.bank.model.Client;
 import pl.marwik.bank.model.Role;
 import pl.marwik.bank.model.entity.Account;
 import pl.marwik.bank.model.entity.Token;
 import pl.marwik.bank.model.entity.User;
-import pl.marwik.bank.model.request.LoginDTO;
+import pl.marwik.bank.model.request.login.CreditCardDTO;
+import pl.marwik.bank.model.request.login.CredentialsDTO;
+import pl.marwik.bank.model.request.login.IdCardDTO;
 import pl.marwik.bank.repository.AccountRepository;
 import pl.marwik.bank.repository.TokenRepository;
 import pl.marwik.bank.repository.UserRepository;
 import pl.marwik.bank.service.OAuthService;
 
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class OAuthServiceImpl implements OAuthService {
@@ -34,14 +36,39 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     @Override
-    public String login(LoginDTO loginDTO) throws BankException {
-        return xSync.evaluate(loginDTO.getLogin(), () -> {
-            User user = getUserByLogin(loginDTO.getLogin());
+    public String login(CredentialsDTO credentialsDTO, String ipAddress) throws BankException {
+        return xSync.evaluate(credentialsDTO.getLogin(), () -> {
+            User user = getUserByLogin(credentialsDTO.getLogin());
             throwIfUserIsNotValid(user);
-            throwIfCredentialsNotMatch(loginDTO.getLogin(), loginDTO.getPassword());
-            throwIfLoggedIn(loginDTO.getLogin());
+            throwIfCredentialsNotMatch(credentialsDTO.getLogin(), credentialsDTO.getPassword());
 
-            Token token = TokenInitialize.initializeRandomTokenForUserRole(loginDTO.getClient(), user);
+            deleteTokenIfLoggedIn(credentialsDTO.getLogin(), credentialsDTO.getClient());
+
+            Token token = TokenInitialize.initializeRandomTokenForUserRole(credentialsDTO.getClient(), user, ipAddress);
+
+            return tokenRepository.save(token).getValue();
+        });
+    }
+
+    @Override
+    public String login(IdCardDTO idCardDTO, String ipAddress) {
+        User user = userRepository.getUserByIDCard(idCardDTO.getIdCard()).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND));
+        return login(user, idCardDTO.getClient(), ipAddress);
+    }
+
+    @Override
+    public String login(CreditCardDTO creditCardDTO, String ipAddress) {
+        User user = getUserByCreditCard(creditCardDTO.getCardNumber());
+        return login(user, creditCardDTO.getClient(), ipAddress);
+    }
+
+    private String login(User user, Client client, String ipAddress){
+        return xSync.evaluate(user.getLogin(), () -> {
+            throwIfUserIsNotValid(user);
+
+            deleteTokenIfLoggedIn(user.getLogin(), client);
+
+            Token token = TokenInitialize.initializeRandomTokenForUserRole(client, user, ipAddress);
 
             return tokenRepository.save(token).getValue();
         });
@@ -57,14 +84,14 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     @Override
-    public void throwIfTokenIsInvalid(String tokenValue) throws BankException {
-        Token tokenByTokenValue = getTokenByTokenValue(tokenValue);
+    public void throwIfTokenIsInvalid(String tokenValue, String ipAddress) throws BankException {
+        Token tokenByTokenValue = getTokenByTokenValue(tokenValue, ipAddress);
         throwIfUserIsNotValid(tokenByTokenValue.getUser());
     }
 
     @Override
-    public void throwIfTokenIsNotAdmin(String tokenValue) throws BankException{
-        throwIfTokenIsInvalid(tokenValue);
+    public void throwIfTokenIsNotAdmin(String tokenValue, String ipAddress) throws BankException{
+        throwIfTokenIsInvalid(tokenValue, ipAddress);
         Role role = getTokenByTokenValue(tokenValue).getRole();
         if(!Objects.equals(role, Role.ADMINISTRATION)){
             throw new BankException(ExceptionCode.NOT_PERMITTED);
@@ -82,6 +109,16 @@ public class OAuthServiceImpl implements OAuthService {
         }
     }
 
+    private User getUserByCreditCard(String creditCard){
+        return accountRepository.findAccountByCreditCard(creditCard)
+                .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND))
+                .getUsers()
+                .stream()
+                .filter(User::isAccountOwner)
+                .findFirst()
+                .orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND));
+    }
+
     private User getUserByLogin(String login){
         return userRepository
                 .getUserByLogin(login)
@@ -94,19 +131,23 @@ public class OAuthServiceImpl implements OAuthService {
                 .orElseThrow(() -> new BankException(ExceptionCode.TOKEN_NOT_FOUND));
     }
 
+    private Token getTokenByTokenValue(String tokenValue, String ipAddress){
+        return tokenRepository
+                .findTokenByValueAndIpAddress(tokenValue, ipAddress)
+                .orElseThrow(() -> new BankException(ExceptionCode.TOKEN_NOT_FOUND));
+    }
+
+
     private void throwIfCredentialsNotMatch(String login, String password){
         userRepository
                 .getUserByLoginAndPassword(login, password)
                 .orElseThrow(() -> new BankException(ExceptionCode.INVALID_CREDENTIALS));
     }
 
-    private void throwIfLoggedIn(String login) {
-        Optional<Token> token = tokenRepository
-                .findTokenByValue(login);
-
-        if(token.isPresent()){
-            throw new BankException(ExceptionCode.USER_ALREADY_LOGGED_IN);
-        }
+    private void deleteTokenIfLoggedIn(String login, Client client) {
+        tokenRepository
+                .findTokenByUser_LoginAndClient(login, client)
+                .ifPresent(tokenRepository::delete);
     }
 
     private void throwIfUserIsNotValid(User user){

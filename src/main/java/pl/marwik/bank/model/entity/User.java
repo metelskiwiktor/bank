@@ -17,6 +17,7 @@ public class User {
     private Gender gender;
     private String login;
     private String password;
+    private boolean accountOwner;
 
     public Long getId() {
         return id;
@@ -80,5 +81,13 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public boolean isAccountOwner() {
+        return accountOwner;
+    }
+
+    public void setAccountOwner(boolean accountOwner) {
+        this.accountOwner = accountOwner;
     }
 }

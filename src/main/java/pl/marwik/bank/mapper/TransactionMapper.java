@@ -2,8 +2,6 @@ package pl.marwik.bank.mapper;
 
 import pl.marwik.bank.model.entity.Account;
 import pl.marwik.bank.model.entity.Transaction;
-import pl.marwik.bank.model.entity.User;
-import pl.marwik.bank.model.helper.Name;
 import pl.marwik.bank.model.helper.TransferMoney;
 import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.request.TransactionTransferSelfDTO;

@@ -1,8 +1,8 @@
-package pl.marwik.bank.model.request;
+package pl.marwik.bank.model.request.login;
 
 import pl.marwik.bank.model.Client;
 
-public class LoginDTO {
+public class CredentialsDTO {
     private String login;
     private String password;
     private Client client;

@@ -18,6 +18,7 @@ public class Account {
     private BigDecimal balance;
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
+    private String creditCard;
 
     public Long getId() {
         return id;
@@ -65,5 +66,13 @@ public class Account {
 
     public void setAccountStatus(AccountStatus accountStatus) {
         this.accountStatus = accountStatus;
+    }
+
+    public String getCreditCard() {
+        return creditCard;
+    }
+
+    public void setCreditCard(String creditCard) {
+        this.creditCard = creditCard;
     }
 }

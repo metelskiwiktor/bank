@@ -68,6 +68,10 @@ public class TransactionTransferDTO implements TransactionDTO{
         return operationType;
     }
 
+    public void setOperationType(OperationType operationType) {
+        this.operationType = operationType;
+    }
+
     public void setSenderBalance(BigDecimal senderBalance) {
         this.senderBalance = senderBalance;
     }

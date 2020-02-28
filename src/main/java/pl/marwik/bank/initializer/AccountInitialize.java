@@ -11,6 +11,7 @@ public class AccountInitialize {
         account.setBalance(BigDecimal.ZERO);
         account.setAccountNumber(AccountNumberInitialize.generate());
         account.setAccountStatus(AccountStatus.CREATING);
+        account.setCreditCard(CreditCardNumberInitialize.initialize());
         return account;
     }
 }

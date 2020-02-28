@@ -9,6 +9,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import pl.marwik.bank.service.OAuthService;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 @Aspect
 @Component
@@ -20,22 +21,23 @@ public class ControllerTokenAspect {
         this.oAuthService = oAuthService;
     }
 
-    //    @Before("execution(* pl.marwik.bank.controller.AccountController.*(..))")
     @Before("@annotation(pl.marwik.bank.model.oauth.RequireUserAuthenticate)")
     public void requireUserAuthenticate() {
         initializeServletRequest();
+        String ipAddress = request.getRemoteAddr();
         String token = request.getHeader("tokenValue");
-        oAuthService.throwIfTokenIsInvalid(token);
+        oAuthService.throwIfTokenIsInvalid(token, ipAddress);
     }
 
     @Before("@annotation(pl.marwik.bank.model.oauth.RequireAdminAuthenticate)")
     public void requireAdminAuthenticate() {
         initializeServletRequest();
+        String ipAddress = request.getRemoteAddr();
         String token = request.getHeader("tokenValue");
-        oAuthService.throwIfTokenIsNotAdmin(token);
+        oAuthService.throwIfTokenIsNotAdmin(token, ipAddress);
     }
 
     private void initializeServletRequest(){
-        request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder.getRequestAttributes())).getRequest();
     }
 }
