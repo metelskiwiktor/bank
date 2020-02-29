@@ -11,5 +11,12 @@ public class BankException extends RuntimeException {
     public ExceptionCode getCode() {
         return code;
     }
+
+    @Override
+    public String toString() {
+        return "BankException{" +
+                "code=" + code +
+                '}';
+    }
 }
 

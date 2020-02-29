@@ -16,6 +16,7 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(value = BankException.class)
     public ResponseEntity<ResponseException> handleConflict(HttpServletRequest request, BankException ex) {
+        System.out.println(ex);
         return new ResponseEntity<>(new ResponseException(ex.getCode().getDetailsPattern(), ex.getCode().getCode(), LocalDateTime.now().toString()), HttpStatus.valueOf(ex.getCode().getHttpStatus()));
     }
 }

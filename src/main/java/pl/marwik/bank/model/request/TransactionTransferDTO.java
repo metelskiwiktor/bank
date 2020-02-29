@@ -18,6 +18,7 @@ public class TransactionTransferDTO implements TransactionDTO{
     private Client client;
     private BigDecimal senderBalance;
     private OperationType operationType;
+    private boolean checkBalance;
 
     public String getSenderAccountNumber() {
         return senderAccountNumber;
@@ -74,6 +75,14 @@ public class TransactionTransferDTO implements TransactionDTO{
 
     public void setSenderBalance(BigDecimal senderBalance) {
         this.senderBalance = senderBalance;
+    }
+
+    public boolean isCheckBalance() {
+        return checkBalance;
+    }
+
+    public void setCheckBalance(boolean checkBalance) {
+        this.checkBalance = checkBalance;
     }
 
     @Override

@@ -1,0 +1,10 @@
+server:
+  port: 8080
+spring:
+  h2:
+    console:
+      enabled: true
+encryption:
+  algorithm: PBEWithMD5AndDES
+  salt: y5dgmNNX
+  secret: Yhgt6#eka~25$;JmWSegQ&V[9?nAW+Va

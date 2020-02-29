@@ -1,9 +1,6 @@
 package pl.marwik.bank.service.impl;
 
 import com.antkorwin.xsync.XSync;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
@@ -21,6 +18,7 @@ import pl.marwik.bank.model.response.TransactionDTO;
 import pl.marwik.bank.repository.*;
 import pl.marwik.bank.service.AccountService;
 import pl.marwik.bank.service.OAuthService;
+import pl.marwik.bank.service.oauth.EncryptionServiceImpl;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,14 +33,16 @@ public class AccountServiceImpl implements AccountService {
     private OAuthService oAuthService;
     private TokenRepository tokenRepository;
     private XSync<String> xSync;
+    private EncryptionServiceImpl encryptionService;
 
-    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService, TokenRepository tokenRepository) {
+    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService, TokenRepository tokenRepository, EncryptionServiceImpl encryptionService) {
         this.accountRepository = accountRepository;
         this.branchRepository = branchRepository;
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.oAuthService = oAuthService;
         this.tokenRepository = tokenRepository;
+        this.encryptionService = encryptionService;
         this.xSync = new XSync<>();
     }
 
@@ -90,7 +90,6 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public void createAccount(CreateAccountDTO createAccountDTO) {
         Branch branch = getBranchByBranchName(createAccountDTO.getBranchName());
-
         Account account = AccountInitialize.initializeAccountInCreateStatus();
         User user = UserMapper.map(createAccountDTO.getUserDTO());
         throwIfUserExist(user.getIDCard());
@@ -111,7 +110,7 @@ public class AccountServiceImpl implements AccountService {
 
     private void addUser(User user, Account account) {
         throwIfUserExist(user.getIDCard());
-
+        user.setPassword(encryptionService.encrypt(user.getPassword()));
         account.addUser(user);
 
         userRepository.save(user);

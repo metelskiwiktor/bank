@@ -47,7 +47,10 @@ public class TransactionServiceImpl implements TransactionService {
 
                     throwIfAmountIsSmallerThanMinimum(transactionTransferDTO.getAmount());
                     throwIfAmountIsSmallerThanBalance(from.getBalance(), transactionTransferDTO.getAmount());
-                    throwIfBalanceIsDifference(from.getBalance(), transactionTransferDTO.getSenderBalance());
+
+                    if(transactionTransferDTO.isCheckBalance()){
+                        throwIfBalanceIsDifference(from.getBalance(), transactionTransferDTO.getSenderBalance());
+                    }
 
                     createTransaction(transactionTransferDTO, from, to, LocalDateTime.now());
 

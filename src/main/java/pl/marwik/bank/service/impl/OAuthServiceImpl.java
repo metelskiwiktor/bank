@@ -18,6 +18,7 @@ import pl.marwik.bank.repository.AccountRepository;
 import pl.marwik.bank.repository.TokenRepository;
 import pl.marwik.bank.repository.UserRepository;
 import pl.marwik.bank.service.OAuthService;
+import pl.marwik.bank.service.oauth.EncryptionServiceImpl;
 
 import java.util.Objects;
 
@@ -27,17 +28,20 @@ public class OAuthServiceImpl implements OAuthService {
     private UserRepository userRepository;
     private AccountRepository accountRepository;
     private XSync<String> xSync;
+    private EncryptionServiceImpl encryptionService;
 
-    public OAuthServiceImpl(TokenRepository tokenRepository, UserRepository userRepository, AccountRepository accountRepository) {
+    public OAuthServiceImpl(TokenRepository tokenRepository, UserRepository userRepository, AccountRepository accountRepository, EncryptionServiceImpl encryptionService) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
+        this.encryptionService = encryptionService;
         this.xSync = new XSync<>();
     }
 
     @Override
     public String login(CredentialsDTO credentialsDTO, String ipAddress) throws BankException {
         return xSync.evaluate(credentialsDTO.getLogin(), () -> {
+            credentialsDTO.setPassword(encryptionService.encrypt(credentialsDTO.getPassword()));
             User user = getUserByLogin(credentialsDTO.getLogin());
             throwIfUserIsNotValid(user);
             throwIfCredentialsNotMatch(credentialsDTO.getLogin(), credentialsDTO.getPassword());
