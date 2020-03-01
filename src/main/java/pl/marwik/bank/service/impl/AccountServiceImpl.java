@@ -34,8 +34,11 @@ public class AccountServiceImpl implements AccountService {
     private TokenRepository tokenRepository;
     private XSync<String> xSync;
     private EncryptionServiceImpl encryptionService;
+    private CreditCardRepository creditCardRepository;
+    private IdCardRepository idCardRepository;
+    private TransferLimitRepository transferLimitRepository;
 
-    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService, TokenRepository tokenRepository, EncryptionServiceImpl encryptionService) {
+    public AccountServiceImpl(AccountRepository accountRepository, BranchRepository branchRepository, TransactionRepository transactionRepository, UserRepository userRepository, OAuthService oAuthService, TokenRepository tokenRepository, EncryptionServiceImpl encryptionService, CreditCardRepository creditCardRepository, IdCardRepository idCardRepository, TransferLimitRepository transferLimitRepository) {
         this.accountRepository = accountRepository;
         this.branchRepository = branchRepository;
         this.transactionRepository = transactionRepository;
@@ -43,6 +46,9 @@ public class AccountServiceImpl implements AccountService {
         this.oAuthService = oAuthService;
         this.tokenRepository = tokenRepository;
         this.encryptionService = encryptionService;
+        this.creditCardRepository = creditCardRepository;
+        this.idCardRepository = idCardRepository;
+        this.transferLimitRepository = transferLimitRepository;
         this.xSync = new XSync<>();
     }
 
@@ -78,28 +84,48 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void addUser(String tokenValue, UserDTO userDTO) {
-        xSync.execute(userDTO.getIdCard(), () -> {
+        xSync.execute(userDTO.getIdCardDTO().getNumber(), () -> {
             Account account = getAccountByAccountNumber(userDTO.getAccountNumber());
             oAuthService.authorize(tokenValue, account);
             User user = UserMapper.map(userDTO);
-
-            addUser(user, account);
+            user.getIdCard().setFirstName(user.getFirstName());
+            user.getIdCard().setLastName(user.getLastName());
+            hashIdCard(user.getIdCard());
+            throwIfUserExist(user.getIdCard().getNumber());
+            transferLimitRepository.save(account.getTransferLimit());
+            idCardRepository.save(user.getIdCard());
+            userRepository.save(user);
+            account.addUser(user);
+            user.setPassword(encryptionService.encrypt(user.getPassword()));
+            creditCardRepository.saveAndFlush(account.getCreditCard());
+            accountRepository.save(account);
         });
     }
 
     @Override
     public void createAccount(CreateAccountDTO createAccountDTO) {
         Branch branch = getBranchByBranchName(createAccountDTO.getBranchName());
-        Account account = AccountInitialize.initializeAccountInCreateStatus();
+
         User user = UserMapper.map(createAccountDTO.getUserDTO());
-        throwIfUserExist(user.getIDCard());
+        user.getIdCard().setFirstName(user.getFirstName());
+        user.getIdCard().setLastName(user.getLastName());
+        hashIdCard(user.getIdCard());
+        Account account = AccountInitialize.initializeAccountInCreateStatus(user);
+        throwIfUserExist(user.getIdCard().getNumber());
         user.setAccountOwner(true);
-        accountRepository.save(account);
+        hashCreditCard(account.getCreditCard());
         addUser(user, account);
 
         branch.addAccount(account);
 
         branchRepository.save(branch);
+    }
+
+    private void hashCreditCard(CreditCard creditCard){
+        creditCard.setCcv(encryptionService.encrypt(creditCard.getCcv()));
+        creditCard.setFirstName(encryptionService.encrypt(creditCard.getFirstName()));
+        creditCard.setLastName(encryptionService.encrypt(creditCard.getLastName()));
+        creditCard.setNumber(encryptionService.encrypt(creditCard.getNumber()));
     }
 
     @Override
@@ -109,16 +135,19 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private void addUser(User user, Account account) {
-        throwIfUserExist(user.getIDCard());
+        throwIfUserExist(user.getIdCard().getNumber());
         user.setPassword(encryptionService.encrypt(user.getPassword()));
         account.addUser(user);
-
+        transferLimitRepository.save(account.getTransferLimit());
+        idCardRepository.saveAndFlush(user.getIdCard());
+        creditCardRepository.saveAndFlush(account.getCreditCard());
         userRepository.save(user);
+
         accountRepository.save(account);
     }
 
-    private void throwIfUserExist(String IDCard) {
-        Optional<User> user = userRepository.getUserByIDCard(IDCard);
+    private void throwIfUserExist(String number) {
+        Optional<User> user = userRepository.getUserByIdCard_Number(number);
 
         if (user.isPresent()) {
             throw new BankException(ExceptionCode.USER_ALREADY_EXIST);
@@ -144,5 +173,14 @@ public class AccountServiceImpl implements AccountService {
     private Account getAccountByTokenValue(String tokenValue) {
         User user = tokenRepository.findTokenByValue(tokenValue).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
         return accountRepository.findAll().stream().filter(account -> account.getUsers().contains(user)).findFirst().orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
+    }
+
+    private void hashIdCard(IdCard idCard) {
+        idCard.setFirstName(encryptionService.encrypt(idCard.getFirstName()));
+        idCard.setLastName(encryptionService.encrypt(idCard.getLastName()));
+        idCard.setNumber(encryptionService.encrypt(idCard.getNumber()));
+        idCard.setBirthDate(encryptionService.encrypt(idCard.getBirthDate()));
+        idCard.setMotherFirstName(encryptionService.encrypt(idCard.getMotherFirstName()));
+        idCard.setFatherFirstName(encryptionService.encrypt(idCard.getFatherFirstName()));
     }
 }

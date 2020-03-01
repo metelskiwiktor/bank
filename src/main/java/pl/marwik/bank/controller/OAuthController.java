@@ -20,18 +20,18 @@ public class OAuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestBody CredentialsDTO credentialsDTO, HttpServletRequest request){
-        return this.oAuthService.login(credentialsDTO, request.getRemoteAddr());
+    public String login(@RequestBody CredentialsDTO credentialsDTO){
+        return this.oAuthService.login(credentialsDTO);
     }
 
     @PostMapping("/login/id")
-    public String login(@RequestBody IdCardDTO idCardDTO, HttpServletRequest request){
-        return this.oAuthService.login(idCardDTO, request.getRemoteAddr());
+    public String login(@RequestBody IdCardDTO idCardDTO){
+        return this.oAuthService.login(idCardDTO);
     }
 
     @PostMapping("/login/credit-card")
     public String login(@RequestBody CreditCardDTO creditCardDTO, HttpServletRequest request){
-        return this.oAuthService.login(creditCardDTO, request.getRemoteAddr());
+        return this.oAuthService.login(creditCardDTO);
     }
 
     @RequireUserAuthenticate

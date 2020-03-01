@@ -8,16 +8,18 @@ import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.model.OperationType;
 import pl.marwik.bank.model.entity.Account;
 import pl.marwik.bank.model.entity.Transaction;
+import pl.marwik.bank.model.entity.TransferLimit;
 import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
 import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.helper.TransferMoney;
 import pl.marwik.bank.repository.AccountRepository;
-import pl.marwik.bank.repository.TokenRepository;
+import pl.marwik.bank.repository.TransferLimitRepository;
 import pl.marwik.bank.repository.TransactionRepository;
 import pl.marwik.bank.service.OAuthService;
 import pl.marwik.bank.service.TransactionService;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -26,11 +28,13 @@ public class TransactionServiceImpl implements TransactionService {
     private AccountRepository accountRepository;
     private OAuthService oAuthService;
     private XSync<String> xSync;
+    private TransferLimitRepository transferLimitRepository;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, OAuthService oAuthService) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, OAuthService oAuthService, TransferLimitRepository transferLimitRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.oAuthService = oAuthService;
+        this.transferLimitRepository = transferLimitRepository;
         this.xSync = new XSync<>();
     }
 
@@ -44,7 +48,7 @@ public class TransactionServiceImpl implements TransactionService {
                     Account to = getAccountByAccountNumber(transactionTransferDTO.getRecipientAccountNumber());
 
                     oAuthService.authorize(tokenValue, from);
-
+                    throwIfTakenLimit(transactionTransferDTO.getAmount(), from.getAccountNumber(), OperationType.TRANSFER);
                     throwIfAmountIsSmallerThanMinimum(transactionTransferDTO.getAmount());
                     throwIfAmountIsSmallerThanBalance(from.getBalance(), transactionTransferDTO.getAmount());
 
@@ -67,6 +71,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             oAuthService.authorize(tokenValue, account);
 
+            throwIfTakenLimit(transactionTransferSelfDTO.getAmount(), account.getAccountNumber(), OperationType.DEPOSIT);
             throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
             throwIfBalanceIsDifference(account.getBalance(), transactionTransferSelfDTO.getSenderBalance());
 
@@ -85,6 +90,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             oAuthService.authorize(tokenValue, account);
 
+            throwIfTakenLimit(transactionTransferSelfDTO.getAmount(), account.getAccountNumber(), OperationType.WITHDRAW);
             throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
             throwIfAmountIsSmallerThanBalance(account.getBalance(), transactionTransferSelfDTO.getAmount());
             throwIfBalanceIsDifference(account.getBalance(), transactionTransferSelfDTO.getSenderBalance());
@@ -152,5 +158,47 @@ public class TransactionServiceImpl implements TransactionService {
         return accountRepository
                 .findAccountByAccountNumber(accountNumber)
                 .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
+    }
+
+    private LocalDateTime getAfter(){
+        LocalDate today = LocalDate.now();
+        return today.atStartOfDay();
+    }
+
+    private LocalDateTime getBefore(){
+        LocalDate today = LocalDate.now().plusDays(1L);
+        return today.atStartOfDay();
+    }
+
+    private void throwIfTakenLimit(BigDecimal amount, String accountNumber, OperationType operationType){
+        BigDecimal sum = transactionRepository.findAllByActionTimeAfterAndActionTimeBeforeAndFrom_AccountNumberAndOperationType(getAfter(), getBefore(), accountNumber, operationType)
+                .stream()
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .add(amount);
+
+        // TODO: 01.03.2020 delete this sout
+        System.out.println(sum + "," + operationType);
+
+        TransferLimit transferLimit = accountRepository.findAccountByAccountNumber(accountNumber).orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND)).getTransferLimit();
+
+        if(getLimit(operationType, transferLimit).compareTo(sum) < 0){
+            throw new BankException(ExceptionCode.LIMIT_REACHED);
+        }
+    }
+
+    private BigDecimal getLimit(OperationType operationType, TransferLimit transferLimit){
+        BigDecimal limit = BigDecimal.ZERO;
+        if(operationType.equals(OperationType.TRANSFER)){
+            limit = transferLimit.getTransferLimit();
+        }
+        if(operationType.equals(OperationType.DEPOSIT)){
+            limit = transferLimit.getDepositLimit();
+        }
+        if(operationType.equals(OperationType.WITHDRAW)){
+            limit = transferLimit.getWithdrawLimit();
+        }
+
+        return limit;
     }
 }

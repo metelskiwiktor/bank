@@ -6,6 +6,7 @@ public enum ExceptionCode {
     ACCOUNT_NOT_FOUND("TF_002", "The provided account hasn't been found", 400),
     AMOUNT_IS_TOO_SMALL("TF_003", "The amount is too small", 400),
     BALANCE_IS_DIFFERENCE("TF_004", "Provided amount of account is diffrence that should be", 400),
+    LIMIT_REACHED("TF_005", "Your limit is reached", 400),
     BRANCH_NOT_FOUND("B_001", "Branch not found", 400),
     BRANCH_ALREADY_EXIST("B_002", "Branch already exist", 400),
     USER_ALREADY_EXIST("U_001", "User already exist", 400),

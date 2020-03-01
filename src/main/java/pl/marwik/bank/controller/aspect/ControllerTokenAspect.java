@@ -24,17 +24,15 @@ public class ControllerTokenAspect {
     @Before("@annotation(pl.marwik.bank.model.oauth.RequireUserAuthenticate)")
     public void requireUserAuthenticate() {
         initializeServletRequest();
-        String ipAddress = request.getRemoteAddr();
         String token = request.getHeader("tokenValue");
-        oAuthService.throwIfTokenIsInvalid(token, ipAddress);
+        oAuthService.throwIfTokenIsInvalid(token);
     }
 
     @Before("@annotation(pl.marwik.bank.model.oauth.RequireAdminAuthenticate)")
     public void requireAdminAuthenticate() {
         initializeServletRequest();
-        String ipAddress = request.getRemoteAddr();
         String token = request.getHeader("tokenValue");
-        oAuthService.throwIfTokenIsNotAdmin(token, ipAddress);
+        oAuthService.throwIfTokenIsNotAdmin(token);
     }
 
     private void initializeServletRequest(){

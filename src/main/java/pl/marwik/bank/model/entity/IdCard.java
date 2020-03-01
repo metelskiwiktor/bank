@@ -1,23 +1,36 @@
-package pl.marwik.bank.model.request.login;
+package pl.marwik.bank.model.entity;
 
-import pl.marwik.bank.model.Client;
+import javax.persistence.*;
+import java.util.Objects;
 
-public class IdCardDTO {
+@Entity
+public class IdCard {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    @Column(unique = true)
     private String number;
     private String expiryDate;
     private String firstName;
     private String lastName;
-    private Client client;
     private String motherFirstName;
     private String fatherFirstName;
     private String birthDate;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getNumber() {
         return number;
     }
 
-    public void setNumber(String number) {
-        this.number = number;
+    public void setNumber(String idCard) {
+        this.number = idCard;
     }
 
     public String getExpiryDate() {
@@ -44,14 +57,6 @@ public class IdCardDTO {
         this.lastName = lastName;
     }
 
-    public Client getClient() {
-        return client;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
-    }
-
     public String getMotherFirstName() {
         return motherFirstName;
     }
@@ -74,5 +79,24 @@ public class IdCardDTO {
 
     public void setBirthDate(String birthDate) {
         this.birthDate = birthDate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IdCard idCard = (IdCard) o;
+        return Objects.equals(number, idCard.number) &&
+                Objects.equals(expiryDate, idCard.expiryDate) &&
+                Objects.equals(firstName, idCard.firstName) &&
+                Objects.equals(lastName, idCard.lastName) &&
+                Objects.equals(motherFirstName, idCard.motherFirstName) &&
+                Objects.equals(fatherFirstName, idCard.fatherFirstName) &&
+                Objects.equals(birthDate, idCard.birthDate);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(number, expiryDate, firstName, lastName, motherFirstName, fatherFirstName, birthDate);
     }
 }

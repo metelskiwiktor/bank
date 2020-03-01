@@ -11,7 +11,7 @@ public abstract class UserMapper {
         user.setLastName(userDTO.getLastName());
         user.setGender(userDTO.getGender());
         user.setPesel(userDTO.getPesel());
-        user.setIDCard(userDTO.getIdCard());
+        user.setIdCard(IdCardMapper.map(userDTO.getIdCardDTO()));
         user.setLogin(userDTO.getLogin());
         user.setPassword(userDTO.getPassword());
 

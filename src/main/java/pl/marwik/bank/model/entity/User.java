@@ -3,6 +3,7 @@ package pl.marwik.bank.model.entity;
 import pl.marwik.bank.model.Gender;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 @Entity
 public class User {
@@ -12,9 +13,11 @@ public class User {
     private String firstName;
     private String lastName;
     private String pesel;
-    private String IDCard;
+    @OneToOne
+    private IdCard idCard;
     @Enumerated(EnumType.STRING)
     private Gender gender;
+    @Column(unique = true)
     private String login;
     private String password;
     private boolean accountOwner;
@@ -51,12 +54,12 @@ public class User {
         this.pesel = pesel;
     }
 
-    public String getIDCard() {
-        return IDCard;
+    public IdCard getIdCard() {
+        return idCard;
     }
 
-    public void setIDCard(String IDCard) {
-        this.IDCard = IDCard;
+    public void setIdCard(IdCard idCard) {
+        this.idCard = idCard;
     }
 
     public Gender getGender() {
@@ -89,5 +92,25 @@ public class User {
 
     public void setAccountOwner(boolean accountOwner) {
         this.accountOwner = accountOwner;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return accountOwner == user.accountOwner &&
+                Objects.equals(firstName, user.firstName) &&
+                Objects.equals(lastName, user.lastName) &&
+                Objects.equals(pesel, user.pesel) &&
+                Objects.equals(idCard, user.idCard) &&
+                gender == user.gender &&
+                Objects.equals(login, user.login) &&
+                Objects.equals(password, user.password);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(firstName, lastName, pesel, idCard, gender, login, password, accountOwner);
     }
 }

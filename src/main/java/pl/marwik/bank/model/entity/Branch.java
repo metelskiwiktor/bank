@@ -5,6 +5,7 @@ import pl.marwik.bank.model.entity.Account;
 import javax.persistence.*;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -14,6 +15,7 @@ public class Branch {
     private Long id;
     @OneToMany
     private Set<Account> accounts;
+    @Column(unique = true)
     private String branchName;
 
     public Long getId() {
@@ -45,5 +47,19 @@ public class Branch {
             accounts = new LinkedHashSet<>();
         }
         accounts.add(account);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Branch branch = (Branch) o;
+        return Objects.equals(accounts, branch.accounts) &&
+                Objects.equals(branchName, branch.branchName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(accounts, branchName);
     }
 }

@@ -5,6 +5,7 @@ import pl.marwik.bank.model.Role;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 public class Token {
@@ -16,10 +17,10 @@ public class Token {
     @Enumerated(EnumType.STRING)
     private Client client;
     private LocalDateTime expiryDate;
+    @Column(unique = true)
     private String value;
     @Enumerated(EnumType.STRING)
     private Role role;
-    private String ipAddress;
 
     public Long getId() {
         return id;
@@ -69,11 +70,20 @@ public class Token {
         this.role = role;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Token token = (Token) o;
+        return Objects.equals(user, token.user) &&
+                client == token.client &&
+                Objects.equals(expiryDate, token.expiryDate) &&
+                Objects.equals(value, token.value) &&
+                role == token.role;
     }
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
+    @Override
+    public int hashCode() {
+        return Objects.hash(user, client, expiryDate, value, role);
     }
 }

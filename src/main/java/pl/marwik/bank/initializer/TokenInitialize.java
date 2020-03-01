@@ -8,7 +8,7 @@ import pl.marwik.bank.model.entity.User;
 import java.util.UUID;
 
 public class TokenInitialize {
-    public static Token initializeRandomTokenForUserRole(Client client, User user, String ipAddress){
+    public static Token initializeRandomTokenForUserRole(Client client, User user){
         String tokenValue = UUID.randomUUID().toString();
         Role role = Role.USER;
 
@@ -17,7 +17,6 @@ public class TokenInitialize {
         token.setUser(user);
         token.setValue(tokenValue);
         token.setRole(role);
-        token.setIpAddress(ipAddress);
         return token;
     }
 }

@@ -6,6 +6,7 @@ import pl.marwik.bank.model.OperationType;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 public class Transaction {
@@ -107,5 +108,26 @@ public class Transaction {
 
     public void setOperationType(OperationType operationType) {
         this.operationType = operationType;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Transaction that = (Transaction) o;
+        return Objects.equals(actionTime, that.actionTime) &&
+                Objects.equals(from, that.from) &&
+                Objects.equals(to, that.to) &&
+                Objects.equals(amount, that.amount) &&
+                client == that.client &&
+                Objects.equals(fromBalance, that.fromBalance) &&
+                Objects.equals(toBalance, that.toBalance) &&
+                Objects.equals(title, that.title) &&
+                operationType == that.operationType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(actionTime, from, to, amount, client, fromBalance, toBalance, title, operationType);
     }
 }

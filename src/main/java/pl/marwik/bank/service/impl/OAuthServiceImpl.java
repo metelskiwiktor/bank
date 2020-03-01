@@ -5,12 +5,12 @@ import org.springframework.stereotype.Service;
 import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.initializer.TokenInitialize;
+import pl.marwik.bank.mapper.CreditCardMapper;
+import pl.marwik.bank.mapper.IdCardMapper;
 import pl.marwik.bank.model.AccountStatus;
 import pl.marwik.bank.model.Client;
 import pl.marwik.bank.model.Role;
-import pl.marwik.bank.model.entity.Account;
-import pl.marwik.bank.model.entity.Token;
-import pl.marwik.bank.model.entity.User;
+import pl.marwik.bank.model.entity.*;
 import pl.marwik.bank.model.request.login.CreditCardDTO;
 import pl.marwik.bank.model.request.login.CredentialsDTO;
 import pl.marwik.bank.model.request.login.IdCardDTO;
@@ -39,7 +39,7 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     @Override
-    public String login(CredentialsDTO credentialsDTO, String ipAddress) throws BankException {
+    public String login(CredentialsDTO credentialsDTO) throws BankException {
         return xSync.evaluate(credentialsDTO.getLogin(), () -> {
             credentialsDTO.setPassword(encryptionService.encrypt(credentialsDTO.getPassword()));
             User user = getUserByLogin(credentialsDTO.getLogin());
@@ -48,31 +48,44 @@ public class OAuthServiceImpl implements OAuthService {
 
             deleteTokenIfLoggedIn(credentialsDTO.getLogin(), credentialsDTO.getClient());
 
-            Token token = TokenInitialize.initializeRandomTokenForUserRole(credentialsDTO.getClient(), user, ipAddress);
+            Token token = TokenInitialize.initializeRandomTokenForUserRole(credentialsDTO.getClient(), user);
 
             return tokenRepository.save(token).getValue();
         });
     }
 
     @Override
-    public String login(IdCardDTO idCardDTO, String ipAddress) {
-        User user = userRepository.getUserByIDCard(idCardDTO.getIdCard()).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND));
-        return login(user, idCardDTO.getClient(), ipAddress);
+    public String login(IdCardDTO idCardDTO) {
+        hashIdCard(idCardDTO);
+        IdCard idCard = IdCardMapper.map(idCardDTO);
+        User user = userRepository.getUserByIdCard(idCard).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND));
+        return login(user, idCardDTO.getClient());
+    }
+
+    private void hashIdCard(IdCardDTO idCardDTO) {
+        idCardDTO.setFirstName(encryptionService.encrypt(idCardDTO.getFirstName()));
+        idCardDTO.setLastName(encryptionService.encrypt(idCardDTO.getLastName()));
+        idCardDTO.setNumber(encryptionService.encrypt(idCardDTO.getNumber()));
+        idCardDTO.setBirthDate(encryptionService.encrypt(idCardDTO.getBirthDate()));
+        idCardDTO.setMotherFirstName(encryptionService.encrypt(idCardDTO.getMotherFirstName()));
+        idCardDTO.setFatherFirstName(encryptionService.encrypt(idCardDTO.getFatherFirstName()));
     }
 
     @Override
-    public String login(CreditCardDTO creditCardDTO, String ipAddress) {
-        User user = getUserByCreditCard(creditCardDTO.getCardNumber());
-        return login(user, creditCardDTO.getClient(), ipAddress);
+    public String login(CreditCardDTO creditCardDTO) {
+        hashCreditCard(creditCardDTO);
+        CreditCard creditCard = CreditCardMapper.map(creditCardDTO);
+        User user = getUserByCreditCard(creditCard);
+        return login(user, creditCardDTO.getClient());
     }
 
-    private String login(User user, Client client, String ipAddress){
+    private String login(User user, Client client) {
         return xSync.evaluate(user.getLogin(), () -> {
             throwIfUserIsNotValid(user);
 
             deleteTokenIfLoggedIn(user.getLogin(), client);
 
-            Token token = TokenInitialize.initializeRandomTokenForUserRole(client, user, ipAddress);
+            Token token = TokenInitialize.initializeRandomTokenForUserRole(client, user);
 
             return tokenRepository.save(token).getValue();
         });
@@ -88,33 +101,38 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     @Override
-    public void throwIfTokenIsInvalid(String tokenValue, String ipAddress) throws BankException {
-        Token tokenByTokenValue = getTokenByTokenValue(tokenValue, ipAddress);
+    public void throwIfTokenIsInvalid(String tokenValue) throws BankException {
+        Token tokenByTokenValue = getTokenByTokenValue(tokenValue);
         throwIfUserIsNotValid(tokenByTokenValue.getUser());
     }
 
     @Override
-    public void throwIfTokenIsNotAdmin(String tokenValue, String ipAddress) throws BankException{
-        throwIfTokenIsInvalid(tokenValue, ipAddress);
+    public void throwIfTokenIsNotAdmin(String tokenValue) throws BankException {
+        throwIfTokenIsInvalid(tokenValue);
         Role role = getTokenByTokenValue(tokenValue).getRole();
-        if(!Objects.equals(role, Role.ADMINISTRATION)){
+        if (!Objects.equals(role, Role.ADMINISTRATION)) {
             throw new BankException(ExceptionCode.NOT_PERMITTED);
         }
     }
 
     @Override
-    public void authorize(String tokenValue, Account owner){
+    public void authorize(String tokenValue, Account owner) {
         User ownerUser = tokenRepository.findTokenByValue(tokenValue).orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND)).getUser();
 
         boolean isUserInAccount = owner.getUsers().stream().anyMatch(user -> user.equals(ownerUser));
 
-        if(!isUserInAccount){
+        if (!isUserInAccount) {
             throw new BankException(ExceptionCode.NOT_PERMITTED);
         }
     }
 
-    private User getUserByCreditCard(String creditCard){
-        return accountRepository.findAccountByCreditCard(creditCard)
+    private User getUserByCreditCard(CreditCard creditCard) {
+        return accountRepository.findAccountByCreditCard_NumberAndCreditCard_CcvAndCreditCard_ExpiryDateAndCreditCard_FirstNameAndCreditCard_LastName(
+                creditCard.getNumber(),
+                creditCard.getCcv(),
+                creditCard.getExpiryDate(),
+                creditCard.getFirstName(),
+                creditCard.getLastName())
                 .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND))
                 .getUsers()
                 .stream()
@@ -123,26 +141,19 @@ public class OAuthServiceImpl implements OAuthService {
                 .orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND));
     }
 
-    private User getUserByLogin(String login){
+    private User getUserByLogin(String login) {
         return userRepository
                 .getUserByLogin(login)
                 .orElseThrow(() -> new BankException(ExceptionCode.USER_NOT_FOUND));
     }
 
-    private Token getTokenByTokenValue(String tokenValue){
+    private Token getTokenByTokenValue(String tokenValue) {
         return tokenRepository
                 .findTokenByValue(tokenValue)
                 .orElseThrow(() -> new BankException(ExceptionCode.TOKEN_NOT_FOUND));
     }
 
-    private Token getTokenByTokenValue(String tokenValue, String ipAddress){
-        return tokenRepository
-                .findTokenByValueAndIpAddress(tokenValue, ipAddress)
-                .orElseThrow(() -> new BankException(ExceptionCode.TOKEN_NOT_FOUND));
-    }
-
-
-    private void throwIfCredentialsNotMatch(String login, String password){
+    private void throwIfCredentialsNotMatch(String login, String password) {
         userRepository
                 .getUserByLoginAndPassword(login, password)
                 .orElseThrow(() -> new BankException(ExceptionCode.INVALID_CREDENTIALS));
@@ -154,13 +165,13 @@ public class OAuthServiceImpl implements OAuthService {
                 .ifPresent(tokenRepository::delete);
     }
 
-    private void throwIfUserIsNotValid(User user){
-        if(!getAccountByUser(user).getAccountStatus().equals(AccountStatus.VALID)){
+    private void throwIfUserIsNotValid(User user) {
+        if (!getAccountByUser(user).getAccountStatus().equals(AccountStatus.VALID)) {
             throw new BankException((ExceptionCode.ACCOUNT_IS_BLOCKED));
         }
     }
 
-    private Account getAccountByUser(User user){
+    private Account getAccountByUser(User user) {
         return accountRepository
                 .findAll()
                 .stream()
@@ -168,4 +179,12 @@ public class OAuthServiceImpl implements OAuthService {
                 .findFirst()
                 .orElseThrow(() -> new BankException(ExceptionCode.ACCOUNT_NOT_FOUND));
     }
+
+    private void hashCreditCard(CreditCardDTO creditCard) {
+        creditCard.setCcv(encryptionService.encrypt(creditCard.getCcv()));
+        creditCard.setFirstName(encryptionService.encrypt(creditCard.getFirstName()));
+        creditCard.setLastName(encryptionService.encrypt(creditCard.getLastName()));
+        creditCard.setNumber(encryptionService.encrypt(creditCard.getNumber()));
+    }
+
 }

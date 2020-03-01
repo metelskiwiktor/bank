@@ -7,13 +7,11 @@ import pl.marwik.bank.model.request.login.CreditCardDTO;
 import pl.marwik.bank.model.request.login.IdCardDTO;
 
 public interface OAuthService {
-    String login(CreditCardDTO creditCardDTO, String ipAddress);
+    String login(CreditCardDTO creditCardDTO);
     void logout(String tokenValue);
-    void throwIfTokenIsInvalid(String tokenValue, String ipAddress);
-    void throwIfTokenIsNotAdmin(String tokenValue, String ipAddress);
+    void throwIfTokenIsInvalid(String tokenValue);
+    void throwIfTokenIsNotAdmin(String tokenValue);
     void authorize(String tokenValue, Account owner);
-
-    String login(CredentialsDTO credentialsDTO, String ipAddress) throws BankException;
-
-    String login(IdCardDTO idCardDTO, String ipAddress);
+    String login(CredentialsDTO credentialsDTO) throws BankException;
+    String login(IdCardDTO idCardDTO);
 }

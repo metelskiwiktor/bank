@@ -10,7 +10,7 @@ public class UserDTO {
     private Gender gender;
     private String login;
     private String password;
-    private String idCard;
+    private IdCardDTO idCardDTO;
 
     public String getFirstName() {
         return firstName;
@@ -68,25 +68,11 @@ public class UserDTO {
         this.password = password;
     }
 
-    public String getIdCard() {
-        return idCard;
+    public IdCardDTO getIdCardDTO() {
+        return idCardDTO;
     }
 
-    public void setIdCard(String idCard) {
-        this.idCard = idCard;
-    }
-
-    @Override
-    public String toString() {
-        return "UserDTO{" +
-                "firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", pesel='" + pesel + '\'' +
-                ", accountNumber='" + accountNumber + '\'' +
-                ", idCard='" + idCard + '\'' +
-                ", gender=" + gender +
-                ", login='" + login + '\'' +
-                ", password='" + password + '\'' +
-                '}';
+    public void setIdCardDTO(IdCardDTO idCardDTO) {
+        this.idCardDTO = idCardDTO;
     }
 }

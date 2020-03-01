@@ -1,13 +1,10 @@
-package pl.marwik.bank.model.request.login;
+package pl.marwik.bank.model.request;
 
 import pl.marwik.bank.model.Client;
 
 public class IdCardDTO {
     private String number;
     private String expiryDate;
-    private String firstName;
-    private String lastName;
-    private Client client;
     private String motherFirstName;
     private String fatherFirstName;
     private String birthDate;
@@ -26,30 +23,6 @@ public class IdCardDTO {
 
     public void setExpiryDate(String expiryDate) {
         this.expiryDate = expiryDate;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public Client getClient() {
-        return client;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
     }
 
     public String getMotherFirstName() {

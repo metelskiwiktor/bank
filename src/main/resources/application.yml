@@ -1,9 +1,11 @@
 server:
-  port: 8080
+  port: 8090
+
 spring:
   h2:
     console:
       enabled: true
+
 encryption:
   algorithm: PBEWithMD5AndDES
   salt: y5dgmNNX

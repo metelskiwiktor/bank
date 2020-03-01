@@ -5,6 +5,7 @@ import pl.marwik.bank.model.AccountStatus;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -14,11 +15,15 @@ public class Account {
     private Long id;
     @OneToMany
     private Set<User> users;
+    @Column(unique = true)
     private String accountNumber;
     private BigDecimal balance;
     @Enumerated(EnumType.STRING)
     private AccountStatus accountStatus;
-    private String creditCard;
+    @OneToOne
+    private CreditCard creditCard;
+    @OneToOne
+    private TransferLimit transferLimit;
 
     public Long getId() {
         return id;
@@ -68,11 +73,36 @@ public class Account {
         this.accountStatus = accountStatus;
     }
 
-    public String getCreditCard() {
+    public CreditCard getCreditCard() {
         return creditCard;
     }
 
-    public void setCreditCard(String creditCard) {
+    public void setCreditCard(CreditCard creditCard) {
         this.creditCard = creditCard;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Account account = (Account) o;
+        return Objects.equals(users, account.users) &&
+                Objects.equals(accountNumber, account.accountNumber) &&
+                Objects.equals(balance, account.balance) &&
+                accountStatus == account.accountStatus &&
+                Objects.equals(creditCard, account.creditCard);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(users, accountNumber, balance, accountStatus, creditCard);
+    }
+
+    public TransferLimit getTransferLimit() {
+        return transferLimit;
+    }
+
+    public void setTransferLimit(TransferLimit transferLimit) {
+        this.transferLimit = transferLimit;
     }
 }
