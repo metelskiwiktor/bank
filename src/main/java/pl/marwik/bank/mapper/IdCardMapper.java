@@ -23,4 +23,16 @@ public abstract class IdCardMapper {
         idCard.setNumber(idCardDTO.getNumber());
         return idCard;
     }
+
+    public static pl.marwik.bank.model.response.account.IdCardDTO map(IdCard idCard){
+        pl.marwik.bank.model.response.account.IdCardDTO idCardDTO = new pl.marwik.bank.model.response.account.IdCardDTO();
+        idCardDTO.setBirthDate(idCard.getBirthDate());
+        idCardDTO.setExpiryDate(idCard.getExpiryDate());
+        idCardDTO.setFatherFirstName(idCard.getFatherFirstName());
+        idCardDTO.setMotherFirstName(idCard.getMotherFirstName());
+        idCardDTO.setFirstName(idCard.getFirstName());
+        idCardDTO.setLastName(idCard.getLastName());
+        idCardDTO.setNumber(idCard.getNumber());
+        return idCardDTO;
+    }
 }

@@ -11,12 +11,18 @@ import pl.marwik.bank.exception.ResponseException;
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
-//@RestControllerAdvice
+@RestControllerAdvice
 public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
-//    @ExceptionHandler(value = BankException.class)
+    @ExceptionHandler(value = BankException.class)
     public ResponseEntity<ResponseException> handleConflict(HttpServletRequest request, BankException ex) {
-        System.out.println(ex);
+        ex.printStackTrace();
         return new ResponseEntity<>(new ResponseException(ex.getCode().getDetailsPattern(), ex.getCode().getCode(), LocalDateTime.now().toString()), HttpStatus.valueOf(ex.getCode().getHttpStatus()));
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<ResponseException> handleConflict(Exception ex) {
+        ex.printStackTrace();
+        return new ResponseEntity<>(new ResponseException(ex.getMessage(), null, LocalDateTime.now().toString()), HttpStatus.CONFLICT);
     }
 }

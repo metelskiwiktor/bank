@@ -5,9 +5,11 @@ import org.springframework.stereotype.Service;
 import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.initializer.AccountInitialize;
+import pl.marwik.bank.mapper.AccountMapper;
 import pl.marwik.bank.mapper.DetailsMapper;
 import pl.marwik.bank.mapper.TransactionMapper;
 import pl.marwik.bank.mapper.UserMapper;
+import pl.marwik.bank.model.AccountStatus;
 import pl.marwik.bank.model.OperationType;
 import pl.marwik.bank.model.entity.*;
 import pl.marwik.bank.model.helper.Name;
@@ -15,11 +17,13 @@ import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
 import pl.marwik.bank.model.response.DetailsDTO;
 import pl.marwik.bank.model.response.TransactionDTO;
+import pl.marwik.bank.model.response.account.AccountDTO;
 import pl.marwik.bank.repository.*;
 import pl.marwik.bank.service.AccountService;
 import pl.marwik.bank.service.OAuthService;
 import pl.marwik.bank.service.oauth.EncryptionServiceImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -121,17 +125,25 @@ public class AccountServiceImpl implements AccountService {
         branchRepository.save(branch);
     }
 
-    private void hashCreditCard(CreditCard creditCard){
-        creditCard.setCcv(encryptionService.encrypt(creditCard.getCcv()));
-        creditCard.setFirstName(encryptionService.encrypt(creditCard.getFirstName()));
-        creditCard.setLastName(encryptionService.encrypt(creditCard.getLastName()));
-        creditCard.setNumber(encryptionService.encrypt(creditCard.getNumber()));
-    }
-
     @Override
     public DetailsDTO getDetails(String tokenValue) {
         Account account = getAccountByTokenValue(tokenValue);
         return DetailsMapper.map(account);
+    }
+
+    @Override
+    public List<AccountDTO> accountInCreatingStatus() {
+        return accountRepository.findAllByAccountStatus(AccountStatus.CREATING).stream().map(AccountMapper::map).collect(Collectors.toList());
+    }
+
+    @Override
+    public void makeAccountValid(String accountNumber) {
+        Account account = getAccountByAccountNumber(accountNumber);
+        throwIfAccountIsNotInCreatingStatus(account);
+
+        account.setAccountStatus(AccountStatus.VALID);
+
+        accountRepository.save(account);
     }
 
     private void addUser(User user, Account account) {
@@ -182,5 +194,18 @@ public class AccountServiceImpl implements AccountService {
         idCard.setBirthDate(encryptionService.encrypt(idCard.getBirthDate()));
         idCard.setMotherFirstName(encryptionService.encrypt(idCard.getMotherFirstName()));
         idCard.setFatherFirstName(encryptionService.encrypt(idCard.getFatherFirstName()));
+    }
+
+    private void hashCreditCard(CreditCard creditCard){
+        creditCard.setCcv(encryptionService.encrypt(creditCard.getCcv()));
+        creditCard.setFirstName(encryptionService.encrypt(creditCard.getFirstName()));
+        creditCard.setLastName(encryptionService.encrypt(creditCard.getLastName()));
+        creditCard.setNumber(encryptionService.encrypt(creditCard.getNumber()));
+    }
+
+    private void throwIfAccountIsNotInCreatingStatus(Account account){
+        if(!account.getAccountStatus().equals(AccountStatus.CREATING)){
+            throw new BankException(ExceptionCode.ACCOUNT_NOT_IN_CREATING);
+        }
     }
 }

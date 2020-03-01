@@ -5,15 +5,15 @@ import org.springframework.stereotype.Service;
 import pl.marwik.bank.exception.BankException;
 import pl.marwik.bank.exception.ExceptionCode;
 import pl.marwik.bank.mapper.TransactionMapper;
+import pl.marwik.bank.model.AccountStatus;
 import pl.marwik.bank.model.OperationType;
 import pl.marwik.bank.model.entity.Account;
 import pl.marwik.bank.model.entity.Transaction;
 import pl.marwik.bank.model.entity.TransferLimit;
-import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
-import pl.marwik.bank.model.request.TransactionTransferDTO;
 import pl.marwik.bank.model.helper.TransferMoney;
+import pl.marwik.bank.model.request.TransactionTransferDTO;
+import pl.marwik.bank.model.request.TransactionTransferSelfDTO;
 import pl.marwik.bank.repository.AccountRepository;
-import pl.marwik.bank.repository.TransferLimitRepository;
 import pl.marwik.bank.repository.TransactionRepository;
 import pl.marwik.bank.service.OAuthService;
 import pl.marwik.bank.service.TransactionService;
@@ -28,13 +28,11 @@ public class TransactionServiceImpl implements TransactionService {
     private AccountRepository accountRepository;
     private OAuthService oAuthService;
     private XSync<String> xSync;
-    private TransferLimitRepository transferLimitRepository;
 
-    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, OAuthService oAuthService, TransferLimitRepository transferLimitRepository) {
+    public TransactionServiceImpl(TransactionRepository transactionRepository, AccountRepository accountRepository, OAuthService oAuthService) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.oAuthService = oAuthService;
-        this.transferLimitRepository = transferLimitRepository;
         this.xSync = new XSync<>();
     }
 
@@ -48,6 +46,9 @@ public class TransactionServiceImpl implements TransactionService {
                     Account to = getAccountByAccountNumber(transactionTransferDTO.getRecipientAccountNumber());
 
                     oAuthService.authorize(tokenValue, from);
+
+                    throwIfAccountIsNotValid(from);
+                    throwIfAccountIsNotValid(to);
                     throwIfTakenLimit(transactionTransferDTO.getAmount(), from.getAccountNumber(), OperationType.TRANSFER);
                     throwIfAmountIsSmallerThanMinimum(transactionTransferDTO.getAmount());
                     throwIfAmountIsSmallerThanBalance(from.getBalance(), transactionTransferDTO.getAmount());
@@ -71,6 +72,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             oAuthService.authorize(tokenValue, account);
 
+            throwIfAccountIsNotValid(account);
             throwIfTakenLimit(transactionTransferSelfDTO.getAmount(), account.getAccountNumber(), OperationType.DEPOSIT);
             throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
             throwIfBalanceIsDifference(account.getBalance(), transactionTransferSelfDTO.getSenderBalance());
@@ -90,6 +92,7 @@ public class TransactionServiceImpl implements TransactionService {
 
             oAuthService.authorize(tokenValue, account);
 
+            throwIfAccountIsNotValid(account);
             throwIfTakenLimit(transactionTransferSelfDTO.getAmount(), account.getAccountNumber(), OperationType.WITHDRAW);
             throwIfAmountIsSmallerThanMinimum(transactionTransferSelfDTO.getAmount());
             throwIfAmountIsSmallerThanBalance(account.getBalance(), transactionTransferSelfDTO.getAmount());
@@ -200,5 +203,11 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         return limit;
+    }
+
+    private void throwIfAccountIsNotValid(Account account){
+        if(!account.getAccountStatus().equals(AccountStatus.VALID)){
+            throw new BankException(ExceptionCode.ACCOUNT_IS_BLOCKED);
+        }
     }
 }

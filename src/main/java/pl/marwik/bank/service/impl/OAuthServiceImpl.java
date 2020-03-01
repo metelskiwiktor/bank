@@ -62,33 +62,12 @@ public class OAuthServiceImpl implements OAuthService {
         return login(user, idCardDTO.getClient());
     }
 
-    private void hashIdCard(IdCardDTO idCardDTO) {
-        idCardDTO.setFirstName(encryptionService.encrypt(idCardDTO.getFirstName()));
-        idCardDTO.setLastName(encryptionService.encrypt(idCardDTO.getLastName()));
-        idCardDTO.setNumber(encryptionService.encrypt(idCardDTO.getNumber()));
-        idCardDTO.setBirthDate(encryptionService.encrypt(idCardDTO.getBirthDate()));
-        idCardDTO.setMotherFirstName(encryptionService.encrypt(idCardDTO.getMotherFirstName()));
-        idCardDTO.setFatherFirstName(encryptionService.encrypt(idCardDTO.getFatherFirstName()));
-    }
-
     @Override
     public String login(CreditCardDTO creditCardDTO) {
         hashCreditCard(creditCardDTO);
         CreditCard creditCard = CreditCardMapper.map(creditCardDTO);
         User user = getUserByCreditCard(creditCard);
         return login(user, creditCardDTO.getClient());
-    }
-
-    private String login(User user, Client client) {
-        return xSync.evaluate(user.getLogin(), () -> {
-            throwIfUserIsNotValid(user);
-
-            deleteTokenIfLoggedIn(user.getLogin(), client);
-
-            Token token = TokenInitialize.initializeRandomTokenForUserRole(client, user);
-
-            return tokenRepository.save(token).getValue();
-        });
     }
 
     @Override
@@ -124,6 +103,18 @@ public class OAuthServiceImpl implements OAuthService {
         if (!isUserInAccount) {
             throw new BankException(ExceptionCode.NOT_PERMITTED);
         }
+    }
+
+    private String login(User user, Client client) {
+        return xSync.evaluate(user.getLogin(), () -> {
+            throwIfUserIsNotValid(user);
+
+            deleteTokenIfLoggedIn(user.getLogin(), client);
+
+            Token token = TokenInitialize.initializeRandomTokenForUserRole(client, user);
+
+            return tokenRepository.save(token).getValue();
+        });
     }
 
     private User getUserByCreditCard(CreditCard creditCard) {
@@ -187,4 +178,13 @@ public class OAuthServiceImpl implements OAuthService {
         creditCard.setNumber(encryptionService.encrypt(creditCard.getNumber()));
     }
 
+
+    private void hashIdCard(IdCardDTO idCardDTO) {
+        idCardDTO.setFirstName(encryptionService.encrypt(idCardDTO.getFirstName()));
+        idCardDTO.setLastName(encryptionService.encrypt(idCardDTO.getLastName()));
+        idCardDTO.setNumber(encryptionService.encrypt(idCardDTO.getNumber()));
+        idCardDTO.setBirthDate(encryptionService.encrypt(idCardDTO.getBirthDate()));
+        idCardDTO.setMotherFirstName(encryptionService.encrypt(idCardDTO.getMotherFirstName()));
+        idCardDTO.setFatherFirstName(encryptionService.encrypt(idCardDTO.getFatherFirstName()));
+    }
 }

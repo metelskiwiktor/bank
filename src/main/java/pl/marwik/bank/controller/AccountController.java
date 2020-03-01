@@ -1,8 +1,6 @@
 package pl.marwik.bank.controller;
 
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-import pl.marwik.bank.model.entity.Transaction;
 import pl.marwik.bank.model.oauth.RequireUserAuthenticate;
 import pl.marwik.bank.model.request.CreateAccountDTO;
 import pl.marwik.bank.model.request.UserDTO;
@@ -10,11 +8,9 @@ import pl.marwik.bank.model.response.DetailsDTO;
 import pl.marwik.bank.model.response.TransactionDTO;
 import pl.marwik.bank.service.AccountService;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
-@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "http://localhost:4202"})
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "http://localhost:4202", "http://localhost:4203"})
 @RestController
 @RequestMapping("/account")
 public class AccountController {

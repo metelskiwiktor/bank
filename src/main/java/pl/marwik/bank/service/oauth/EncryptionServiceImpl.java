@@ -46,5 +46,4 @@ public class EncryptionServiceImpl {
         cipher.init(Cipher.ENCRYPT_MODE, key, paramSpec);
         return cipher;
     }
-
 }

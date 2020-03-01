@@ -13,4 +13,14 @@ public abstract class CreditCardMapper {
         creditCard.setFirstName(creditCardDTO.getFirstName());
         return creditCard;
     }
+
+    public static pl.marwik.bank.model.response.account.CreditCardDTO map(CreditCard creditCard){
+        pl.marwik.bank.model.response.account.CreditCardDTO creditCardDTO = new pl.marwik.bank.model.response.account.CreditCardDTO();
+        creditCardDTO.setCcv(creditCard.getCcv());
+        creditCardDTO.setExpiryDate(creditCard.getExpiryDate());
+        creditCardDTO.setFirstName(creditCard.getFirstName());
+        creditCardDTO.setLastName(creditCard.getLastName());
+        creditCardDTO.setNumber(creditCard.getNumber());
+        return creditCardDTO;
+    }
 }

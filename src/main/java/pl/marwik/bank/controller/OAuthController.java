@@ -9,7 +9,7 @@ import pl.marwik.bank.service.OAuthService;
 
 import javax.servlet.http.HttpServletRequest;
 
-@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "http://localhost:4202"})
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:4201", "http://localhost:4202", "http://localhost:4203"})
 @RestController
 @RequestMapping("/oauth")
 public class OAuthController {
